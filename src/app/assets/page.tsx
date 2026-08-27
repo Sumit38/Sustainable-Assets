@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { Header } from '@/components/common/Header'
-import { Card, CardBody, CardHeader } from '@/components/common/Card'
+import { Card, CardBody } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
 import { StatusIndicator } from '@/components/common/StatusIndicator'
