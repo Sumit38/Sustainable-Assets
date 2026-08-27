@@ -1,6 +1,8 @@
+'use client'
+
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   BarChart3,
   AlertTriangle,
@@ -21,10 +23,10 @@ const navigation = [
 ]
 
 export function Sidebar() {
-  const router = useRouter()
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
 
-  const isActive = (href: string) => router.pathname === href
+  const isActive = (href: string) => pathname === href
 
   return (
     <>
