@@ -108,7 +108,24 @@ export default function AssetsPage() {
               <Plus className="w-4 h-4" />
               New Asset
             </Button>
-            <Button variant="secondary" size="md">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => {
+                const csv = [
+                  ['Product Name', 'Asset Type', 'Manufacturer', 'Health Status', 'Compliance Score'].join(','),
+                  ...filteredAssets.map(a =>
+                    [a.productName, a.assetType, a.manufacturer, a.healthStatus, a.complianceScore].join(',')
+                  )
+                ].join('\n')
+                const blob = new Blob([csv], { type: 'text/csv' })
+                const url = window.URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'assets.csv'
+                a.click()
+              }}
+            >
               <Download className="w-4 h-4" />
               Export
             </Button>
@@ -198,7 +215,10 @@ export default function AssetsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                        <button
+                          onClick={() => alert(`Asset: ${asset.productName}\nID: ${asset.assetId}\nStatus: ${asset.healthStatus}\nCompliance: ${asset.complianceScore}%`)}
+                          className="text-primary-600 hover:text-primary-700 text-sm font-medium cursor-pointer"
+                        >
                           View
                         </button>
                       </td>
