@@ -68,7 +68,7 @@ export default function AssetsPage() {
     <div className="w-full">
       <Header
         title="Asset Inventory"
-        description="View and manage all admin assets"
+        description="View and manage all assets"
       />
 
       <div className="p-6 space-y-6">

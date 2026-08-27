@@ -14,7 +14,7 @@ export default function WelcomePage() {
         <div className="text-center mb-16">
           <div className="flex items-center justify-center gap-3 mb-6">
             <BarChart3 className="w-12 h-12 text-primary-600" />
-            <h1 className="text-5xl font-bold text-neutral-900">Admin Asset Health System</h1>
+            <h1 className="text-5xl font-bold text-neutral-900">Asset Health System</h1>
           </div>
           <p className="text-xl text-neutral-600">
             Professional monitoring for your organization's asset portfolio
@@ -28,7 +28,7 @@ export default function WelcomePage() {
               <Package className="w-12 h-12 text-primary-600 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Complete Visibility</h3>
               <p className="text-neutral-600 text-sm">
-                Track all your admin assets including furniture, hardware, software, and real estate in one place
+                Track all your assets including furniture, hardware, software, and real estate in one place
               </p>
             </CardBody>
           </Card>
@@ -107,7 +107,7 @@ export default function WelcomePage() {
                   <div>
                     <h4 className="font-semibold text-neutral-900 mb-1">Multi-Category Support</h4>
                     <p className="text-sm text-neutral-600">
-                      Track admin assets, hardware, software, real estate, vehicles, and more
+                      Track assets, hardware, software, real estate, vehicles, and more
                     </p>
                   </div>
                 </div>
@@ -121,7 +121,7 @@ export default function WelcomePage() {
           <h2 className="text-3xl font-bold text-center mb-8 text-neutral-900">What You Can Track</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             {[
-              { icon: '📦', name: 'Admin Assets' },
+              { icon: '📦', name: 'Assets' },
               { icon: '💻', name: 'Hardware' },
               { icon: '📱', name: 'Software' },
               { icon: '🏢', name: 'Real Estate' },
@@ -168,7 +168,7 @@ export default function WelcomePage() {
         {/* Footer */}
         <div className="text-center mt-12 text-neutral-600 text-sm">
           <p>
-            Admin Asset Health System v1.0.0 • Professional Asset Monitoring & Alert Management
+            Asset Health System v1.0.0 • Professional Asset Monitoring & Alert Management
           </p>
         </div>
       </div>

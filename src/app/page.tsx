@@ -96,7 +96,7 @@ export default function Dashboard() {
 
   return (
     <div className="w-full">
-      <Header title="Dashboard" description="Real-time admin asset health overview" alerts={metrics.pendingAlerts} />
+      <Header title="Dashboard" description="Real-time asset health overview" alerts={metrics.pendingAlerts} />
 
       <div className="p-6 space-y-6">
         {/* KPI Stats */}

@@ -9,7 +9,7 @@ import { Save, User, Bell, Lock, Database } from 'lucide-react'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
-    appName: 'Admin Asset Health System',
+    appName: 'Asset Health System',
     organizationName: 'Your Organization',
     email: 'admin@assethealth.com',
     phone: '+1-800-000-0000',

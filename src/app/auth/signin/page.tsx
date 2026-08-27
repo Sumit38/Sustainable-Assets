@@ -26,7 +26,7 @@ export default function SignInPage() {
         throw new Error('Please fill in all fields')
       }
       await signIn(email, password)
-      router.push('/')
+      router.push('/welcome')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in')
     } finally {
