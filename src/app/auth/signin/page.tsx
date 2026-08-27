@@ -41,7 +41,7 @@ export default function SignInPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <BarChart3 className="w-10 h-10 text-primary-600" />
-            <span className="text-2xl font-bold text-neutral-900">Sustainable Assets</span>
+            <span className="text-2xl font-bold text-neutral-900">Asset Health System</span>
           </div>
           <h1 className="text-3xl font-bold text-neutral-900 mb-2">Welcome Back</h1>
           <p className="text-neutral-600">Sign in to your account</p>

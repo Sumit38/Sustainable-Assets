@@ -4,7 +4,7 @@ import { Layout } from '@/components/common/Layout'
 import '@/styles/globals.css'
 
 export const metadata: Metadata = {
-  title: 'Sustainable Assets',
+  title: 'Asset Health System',
   description: 'Professional asset health monitoring and alert system',
   viewport: 'width=device-width, initial-scale=1',
 }
