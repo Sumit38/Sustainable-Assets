@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
+import { useAuth } from '@/lib/auth/authContext'
 import {
   BarChart3,
   AlertTriangle,
@@ -22,6 +23,35 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
+
+function LogoutButton() {
+  const router = useRouter()
+  const { user, signOut } = useAuth()
+
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      router.push('/auth/signin')
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
+
+  return (
+    <div className="border-t border-neutral-800 p-4">
+      <div className="mb-4 px-4 py-2 text-sm text-neutral-400">
+        {user?.email}
+      </div>
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-3 w-full px-4 py-3 text-neutral-300 hover:bg-neutral-800 rounded-lg transition-colors"
+      >
+        <LogOut className="w-5 h-5" />
+        <span className="text-sm font-medium">Logout</span>
+      </button>
+    </div>
+  )
+}
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -81,12 +111,7 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-neutral-800 p-4">
-          <button className="flex items-center gap-3 w-full px-4 py-3 text-neutral-300 hover:bg-neutral-800 rounded-lg transition-colors">
-            <LogOut className="w-5 h-5" />
-            <span className="text-sm font-medium">Logout</span>
-          </button>
-        </div>
+        <LogoutButton />
       </aside>
 
       {/* Mobile Overlay */}
