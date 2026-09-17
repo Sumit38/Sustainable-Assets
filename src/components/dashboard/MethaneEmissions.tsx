@@ -4,7 +4,17 @@ import React from 'react'
 import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { AlertTriangle, TrendingDown } from 'lucide-react'
-import { COLORS } from '@/lib/constants/colors'
+
+const COLORS = [
+  '#3b82f6', // blue
+  '#ef4444', // red
+  '#10b981', // green
+  '#f59e0b', // amber
+  '#8b5cf6', // purple
+  '#ec4899', // pink
+  '#14b8a6', // teal
+  '#f97316', // orange
+]
 
 interface MethaneByMaterial {
   material: string
