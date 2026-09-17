@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Leaf,
 } from 'lucide-react'
 
 const navigation = [
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Assets', href: '/assets', icon: Package },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
+  { name: 'Sustainability', href: '/sustainability', icon: Leaf },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
