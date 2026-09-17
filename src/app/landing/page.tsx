@@ -73,8 +73,8 @@ export default function LandingPage() {
             <VideoPlayer
               title="Asset Lifecycle Impact"
               description="Learn how aging assets affect employee health, environmental health, and your bottom line"
-              // videoUrl="https://your-video-url.mp4" // Add your video URL here
-              // posterImage="https://your-poster-image.jpg" // Add poster image here
+              videoUrl="https://www.youtube.com/embed/xtf1eHBlh14"
+              posterImage="https://img.youtube.com/vi/xtf1eHBlh14/maxresdefault.jpg"
             />
           </div>
         </div>
