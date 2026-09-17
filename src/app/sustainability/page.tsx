@@ -5,7 +5,8 @@ import { Header } from '@/components/common/Header'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
 import { SustainabilityMetrics } from '@/components/dashboard/SustainabilityMetrics'
-import { AlertTriangle, CheckCircle, TrendingDown, Zap } from 'lucide-react'
+import { MethaneEmissions } from '@/components/dashboard/MethaneEmissions'
+import { AlertTriangle, CheckCircle, TrendingDown, Zap, Flame } from 'lucide-react'
 
 // Mock data - will be replaced with real data from Supabase
 const MOCK_SUSTAINABILITY_DATA = {
@@ -97,10 +98,67 @@ const MOCK_SUSTAINABILITY_DATA = {
       employeesAtRisk: 55,
     },
   ],
+  methaneData: {
+    totalMethaneKg: 45.8,
+    totalCO2eFromMethane: 1282,
+    avoidanceOpportunity: 1282,
+    highMethaneAssets: [
+      {
+        id: '1',
+        asset_type: 'Office Chairs (Foam)',
+        severity: 'critical',
+        escaped_methane_kg: 12.3,
+        co2e_equivalent: 344,
+        recommendation: 'Prioritize recycling over landfill to save 344kg CO₂e',
+      },
+      {
+        id: '2',
+        asset_type: 'Cubicle Padding (Foam)',
+        severity: 'high',
+        escaped_methane_kg: 8.5,
+        co2e_equivalent: 238,
+        recommendation: 'Consider reuse or refurbishment to avoid methane emissions',
+      },
+      {
+        id: '3',
+        asset_type: 'Sofa Units (Fabric)',
+        severity: 'high',
+        escaped_methane_kg: 6.2,
+        co2e_equivalent: 174,
+        recommendation: 'Reuse in office lounges or donate - environmental impact reduced by 95%',
+      },
+    ],
+    materialBreakdown: [
+      {
+        material: 'Foam',
+        methane_kg: 28.5,
+        co2e_equivalent: 798,
+        asset_count: 12,
+      },
+      {
+        material: 'Fabric',
+        methane_kg: 10.2,
+        co2e_equivalent: 286,
+        asset_count: 8,
+      },
+      {
+        material: 'Wood',
+        methane_kg: 4.5,
+        co2e_equivalent: 126,
+        asset_count: 5,
+      },
+      {
+        material: 'Paper',
+        methane_kg: 2.6,
+        co2e_equivalent: 73,
+        asset_count: 3,
+      },
+    ],
+  },
 }
 
 export default function SustainabilityPage() {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'details'>('overview')
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'details' | 'methane'>('overview')
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -130,16 +188,17 @@ export default function SustainabilityPage() {
 
       <div className="p-6 space-y-6">
         {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-neutral-200">
+        <div className="flex gap-2 border-b border-neutral-200 overflow-x-auto">
           {[
             { id: 'overview', label: 'Overview' },
             { id: 'alerts', label: `Alerts (${MOCK_SUSTAINABILITY_DATA.alerts.length})` },
+            { id: 'methane', label: 'Methane (CH₄)' },
             { id: 'details', label: 'Department Details' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id as any)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 selectedTab === tab.id
                   ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-neutral-600 hover:text-neutral-900'
@@ -252,6 +311,17 @@ export default function SustainabilityPage() {
               </div>
             </CardBody>
           </Card>
+        )}
+
+        {/* Methane Emissions Tab */}
+        {selectedTab === 'methane' && (
+          <MethaneEmissions
+            methaneByMaterial={MOCK_SUSTAINABILITY_DATA.methaneData.materialBreakdown}
+            highMethaneAssets={MOCK_SUSTAINABILITY_DATA.methaneData.highMethaneAssets}
+            totalMethaneKg={MOCK_SUSTAINABILITY_DATA.methaneData.totalMethaneKg}
+            totalCO2eFromMethane={MOCK_SUSTAINABILITY_DATA.methaneData.totalCO2eFromMethane}
+            avoidanceOpportunity={MOCK_SUSTAINABILITY_DATA.methaneData.avoidanceOpportunity}
+          />
         )}
 
         {/* Department Details Tab */}
