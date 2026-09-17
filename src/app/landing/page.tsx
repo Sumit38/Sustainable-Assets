@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/common/Button'
 import { Card, CardBody } from '@/components/common/Card'
+import { VideoPlayer } from '@/components/common/VideoPlayer'
 import {
   Package,
   AlertTriangle,
@@ -68,19 +69,13 @@ export default function LandingPage() {
               <p className="text-sm text-neutral-500 mt-6">✓ No credit card required • Free for 30 days</p>
             </div>
 
-            {/* Video Placeholder */}
-            <div className="bg-neutral-900 rounded-xl overflow-hidden shadow-2xl aspect-video">
-              <iframe
-                width="100%"
-                height="100%"
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&loop=1"
-                title="Asset Health System Demo"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full"
-              />
-            </div>
+            {/* Professional Video Player */}
+            <VideoPlayer
+              title="Asset Lifecycle Impact"
+              description="Learn how aging assets affect employee health, environmental health, and your bottom line"
+              // videoUrl="https://your-video-url.mp4" // Add your video URL here
+              // posterImage="https://your-poster-image.jpg" // Add poster image here
+            />
           </div>
         </div>
       </section>
