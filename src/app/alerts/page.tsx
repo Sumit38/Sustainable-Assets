@@ -1,11 +1,59 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Header } from '@/components/common/Header'
+import React, { useState, useMemo } from 'react'
+import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
-import { Bell, Trash2, CheckCircle } from 'lucide-react'
+import { useDashboard } from '@/lib/context/dashboardContext'
+import { Bell, Trash2, CheckCircle, AlertCircle } from 'lucide-react'
+
+// Generate alerts from imported assets
+const generateAlertsFromAssets = (assets: any[]) => {
+  const alerts = []
+  assets.forEach(asset => {
+    if (asset.healthStatus === 'critical') {
+      alerts.push({
+        id: `alert-critical-${asset.assetId}`,
+        title: 'Critical Health Status',
+        message: `${asset.productName} is in critical condition and requires immediate attention`,
+        type: 'health-risk',
+        severity: 'critical',
+        assetId: asset.assetId,
+        assetName: asset.productName,
+        createdAt: new Date().toISOString(),
+        resolved: false,
+      })
+    }
+    if (asset.complianceScore < 80) {
+      alerts.push({
+        id: `alert-compliance-${asset.assetId}`,
+        title: 'Compliance Violation',
+        message: `${asset.productName} has low compliance score (${asset.complianceScore}%)`,
+        type: 'compliance-violation',
+        severity: 'warning',
+        assetId: asset.assetId,
+        assetName: asset.productName,
+        createdAt: new Date().toISOString(),
+        resolved: false,
+      })
+    }
+    if (asset.daysUntilEndOfSupport < 180 && asset.daysUntilEndOfSupport > 0) {
+      alerts.push({
+        id: `alert-eol-${asset.assetId}`,
+        title: 'Support Ending Soon',
+        message: `Support for ${asset.productName} ends in ${asset.daysUntilEndOfSupport} days`,
+        type: 'support-ending',
+        severity: 'warning',
+        assetId: asset.assetId,
+        assetName: asset.productName,
+        createdAt: new Date().toISOString(),
+        resolved: false,
+      })
+    }
+  })
+  return alerts
+}
 
 const MOCK_ALERTS = [
   {
@@ -59,7 +107,11 @@ const typeLabels = {
 
 export default function AlertsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'resolved'>('pending')
-  const [alerts, setAlerts] = useState(MOCK_ALERTS)
+  const { importedAssets } = useDashboard()
+
+  const generatedAlerts = useMemo(() => generateAlertsFromAssets(importedAssets), [importedAssets])
+  const initialAlerts = importedAssets.length > 0 ? generatedAlerts : MOCK_ALERTS
+  const [alerts, setAlerts] = useState(initialAlerts)
 
   const filteredAlerts = alerts.filter((alert) => {
     if (filter === 'pending') return !alert.resolved
@@ -80,7 +132,7 @@ export default function AlertsPage() {
 
   return (
     <div className="w-full">
-      <Header title="Alert Management" description="Monitor and manage system alerts" alerts={pendingCount} />
+      <PageHeader title="Alert Management" description="Monitor and manage system alerts" alerts={pendingCount} homeHref="/" />
 
       <div className="p-6 space-y-6">
         {/* Quick Stats */}

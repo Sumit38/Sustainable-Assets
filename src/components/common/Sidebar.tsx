@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Leaf,
+  CheckCircle2,
 } from 'lucide-react'
 
 const navigation = [
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Sustainability', href: '/sustainability', icon: Leaf },
+  { name: 'Risk Justification', href: '/risk-justification', icon: CheckCircle2 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

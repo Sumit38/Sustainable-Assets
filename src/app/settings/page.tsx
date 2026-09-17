@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Header } from '@/components/common/Header'
+import { PageHeader } from '@/components/common/PageHeader'
+import { Moon, Sun } from 'lucide-react'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
@@ -32,11 +33,19 @@ export default function SettingsPage() {
 
   const handleChange = (key: string, value: any) => {
     setSettings({ ...settings, [key]: value })
+
+    // Handle theme change with page refresh
+    if (key === 'theme') {
+      localStorage.setItem('theme', value)
+      document.documentElement.setAttribute('data-theme', value)
+      // Refresh the page to apply theme changes
+      setTimeout(() => window.location.reload(), 500)
+    }
   }
 
   return (
     <div className="w-full">
-      <Header title="Settings" description="Configure application and user preferences" />
+      <PageHeader title="Settings" description="Configure application and user preferences" homeHref="/" />
 
       <div className="p-6 space-y-6 max-w-4xl">
         {/* Success Message */}
@@ -131,17 +140,33 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="label">Theme</label>
-              <div className="flex gap-4">
-                {['light', 'dark', 'auto'].map((theme) => (
-                  <label key={theme} className="flex items-center gap-2">
+              <label className="label">Theme Preference</label>
+              <p className="text-xs text-neutral-600 mb-3">Changing theme will refresh the page to apply new styles</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {[
+                  { value: 'light', label: 'Light', icon: Sun },
+                  { value: 'dark', label: 'Dark', icon: Moon },
+                  { value: 'auto', label: 'Auto', icon: null },
+                ].map(({ value, label, icon: IconComponent }) => (
+                  <label
+                    key={value}
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      settings.theme === value
+                        ? 'border-primary-600 bg-primary-50'
+                        : 'border-neutral-200 hover:border-neutral-300'
+                    }`}
+                  >
                     <input
                       type="radio"
-                      value={theme}
-                      checked={settings.theme === theme}
+                      value={value}
+                      checked={settings.theme === value}
                       onChange={(e) => handleChange('theme', e.target.value)}
+                      className="w-4 h-4"
                     />
-                    <span className="text-sm capitalize">{theme}</span>
+                    <div className="flex-1">
+                      {IconComponent ? <IconComponent className="w-5 h-5 text-neutral-600" /> : null}
+                    </div>
+                    <span className="text-sm font-medium capitalize">{label}</span>
                   </label>
                 ))}
               </div>

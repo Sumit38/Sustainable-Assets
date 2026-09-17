@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Header } from '@/components/common/Header'
+import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
+import { Button } from '@/components/common/Button'
+import { useDashboard } from '@/lib/context/dashboardContext'
 import { SustainabilityMetrics } from '@/components/dashboard/SustainabilityMetrics'
 import { MethaneEmissions } from '@/components/dashboard/MethaneEmissions'
-import { AlertTriangle, CheckCircle, TrendingDown, Zap, Flame } from 'lucide-react'
+import { AlertTriangle, CheckCircle, TrendingDown, Zap, Flame, AlertCircle } from 'lucide-react'
 
 // Mock data - will be replaced with real data from Supabase
 const MOCK_SUSTAINABILITY_DATA = {
@@ -159,6 +161,7 @@ const MOCK_SUSTAINABILITY_DATA = {
 
 export default function SustainabilityPage() {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'details' | 'methane'>('overview')
+  const { importedAssets, calculatedMetrics } = useDashboard()
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -180,12 +183,31 @@ export default function SustainabilityPage() {
 
   return (
     <div className="w-full">
-      <Header
+      <PageHeader
         title="Sustainability & Health Impact"
         description="Environmental emissions and organizational health risk dashboard"
         alerts={MOCK_SUSTAINABILITY_DATA.alerts.filter((a) => a.severity !== 'info').length}
+        homeHref="/"
       />
 
+      {importedAssets.length === 0 && (
+        <div className="p-6">
+          <Card>
+            <CardBody className="flex flex-col items-center justify-center py-12">
+              <AlertCircle className="w-12 h-12 text-neutral-300 mb-4" />
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Sustainability Data</h3>
+              <p className="text-sm text-neutral-600 mb-6">
+                Import asset data from the Dashboard to view sustainability and health impact metrics
+              </p>
+              <Button variant="primary" onClick={() => window.location.href = '/'}>
+                Go to Dashboard
+              </Button>
+            </CardBody>
+          </Card>
+        </div>
+      )}
+
+      {importedAssets.length > 0 && (
       <div className="p-6 space-y-6">
         {/* Tab Navigation */}
         <div className="flex gap-2 border-b border-neutral-200 overflow-x-auto">
@@ -379,6 +401,7 @@ export default function SustainabilityPage() {
           </Card>
         )}
       </div>
+      )}
     </div>
   )
 }

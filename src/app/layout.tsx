@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/components/auth/AuthProvider'
+import { DashboardProvider } from '@/lib/context/dashboardContext'
 import { Layout } from '@/components/common/Layout'
 import '@/styles/globals.css'
 
@@ -22,7 +23,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          <Layout>{children}</Layout>
+          <DashboardProvider>
+            <Layout>{children}</Layout>
+          </DashboardProvider>
         </AuthProvider>
       </body>
     </html>

@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Header } from '@/components/common/Header'
+import React, { useState, useMemo } from 'react'
+import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
+import { useDashboard } from '@/lib/context/dashboardContext'
 import {
   BarChart,
   Bar,
@@ -18,37 +19,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  ScatterChart,
-  Scatter,
 } from 'recharts'
-import { Download, Calendar, Filter } from 'lucide-react'
+import { Download, Calendar, Filter, AlertCircle } from 'lucide-react'
 
-// Mock data
-const HEALTH_TREND = [
-  { month: 'Jan', healthy: 300, atRisk: 100, critical: 50, endOfLife: 5 },
-  { month: 'Feb', healthy: 295, atRisk: 110, critical: 60, endOfLife: 8 },
-  { month: 'Mar', healthy: 285, atRisk: 125, critical: 70, endOfLife: 12 },
-  { month: 'Apr', healthy: 275, atRisk: 140, critical: 75, endOfLife: 15 },
-  { month: 'May', healthy: 265, atRisk: 155, critical: 65, endOfLife: 18 },
-  { month: 'Jun', healthy: 255, atRisk: 165, critical: 70, endOfLife: 20 },
-  { month: 'Jul', healthy: 250, atRisk: 150, critical: 80, endOfLife: 20 },
-  { month: 'Aug', healthy: 250, atRisk: 150, critical: 80, endOfLife: 20 },
-]
-
-const COMPLIANCE_BY_TYPE = [
-  { type: 'Chair', score: 72 },
-  { type: 'Table', score: 85 },
-  { type: 'Cubicle Equipment', score: 68 },
-]
-
-const SUPPORT_END_DATE_DISTRIBUTION = [
-  { days: '0-30', count: 45 },
-  { days: '30-90', count: 85 },
-  { days: '90-180', count: 120 },
-  { days: '180-365', count: 200 },
-  { days: '365+', count: 50 },
-]
-
+// Mock data for demonstrations - will be replaced with real calculations
 const REPLACEMENT_COST_PROJECTION = [
   { quarter: 'Q3 2024', estimated: 50000 },
   { quarter: 'Q4 2024', estimated: 75000 },
@@ -57,14 +31,63 @@ const REPLACEMENT_COST_PROJECTION = [
   { quarter: 'Q3 2025', estimated: 95000 },
 ]
 
+const ISSUE_PROBABILITY_FORECAST = [
+  { month: 'Jan', probability: 5, severity: 2 },
+  { month: 'Feb', probability: 8, severity: 3 },
+  { month: 'Mar', probability: 12, severity: 4 },
+  { month: 'Apr', probability: 18, severity: 6 },
+  { month: 'May', probability: 25, severity: 8 },
+  { month: 'Jun', probability: 32, severity: 11 },
+  { month: 'Jul', probability: 38, severity: 14 },
+  { month: 'Aug', probability: 42, severity: 16 },
+  { month: 'Sep', probability: 45, severity: 18 },
+]
+
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState('last-30-days')
   const [reportType, setReportType] = useState('all')
+  const { importedAssets } = useDashboard()
+
+  // Calculate compliance by type from imported assets
+  const complianceByType = useMemo(() => {
+    const typeMap = new Map<string, { total: number; sumScore: number }>()
+    importedAssets.forEach(asset => {
+      const existing = typeMap.get(asset.assetType) || { total: 0, sumScore: 0 }
+      typeMap.set(asset.assetType, {
+        total: existing.total + 1,
+        sumScore: existing.sumScore + asset.complianceScore,
+      })
+    })
+    return Array.from(typeMap.entries())
+      .map(([type, data]) => ({
+        type,
+        score: Math.round(data.sumScore / data.total),
+      }))
+      .sort((a, b) => b.score - a.score)
+  }, [importedAssets])
 
   return (
     <div className="w-full">
-      <Header title="Reports & Analytics" description="Comprehensive asset health analytics and trends" />
+      <PageHeader title="Reports & Analytics" description="Comprehensive asset health analytics and trends" homeHref="/" />
 
+      {importedAssets.length === 0 && (
+        <div className="p-6">
+          <Card>
+            <CardBody className="flex flex-col items-center justify-center py-12">
+              <AlertCircle className="w-12 h-12 text-neutral-300 mb-4" />
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Data Available</h3>
+              <p className="text-sm text-neutral-600 mb-6">
+                Import asset data from the Dashboard to generate reports and analytics
+              </p>
+              <Button variant="primary" onClick={() => window.location.href = '/'}>
+                Go to Dashboard
+              </Button>
+            </CardBody>
+          </Card>
+        </div>
+      )}
+
+      {importedAssets.length > 0 && (
       <div className="p-6 space-y-6">
         {/* Report Controls */}
         <Card>
@@ -123,7 +146,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardBody>
             <ResponsiveContainer width="100%" height={350}>
-              <AreaChart data={HEALTH_TREND}>
+              <LineChart data={ISSUE_PROBABILITY_FORECAST}>
                 <defs>
                   <linearGradient id="colorHealthy" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
@@ -140,34 +163,77 @@ export default function ReportsPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis />
+                <YAxis yAxisId="left" label={{ value: 'Probability (%)', angle: -90, position: 'insideLeft' }} />
+                <YAxis yAxisId="right" orientation="right" label={{ value: 'Severity', angle: 90, position: 'insideRight' }} />
                 <Tooltip />
                 <Legend />
-                <Area
+                <Line
+                  yAxisId="left"
                   type="monotone"
-                  dataKey="healthy"
-                  stackId="1"
-                  stroke="#22c55e"
-                  fillOpacity={1}
-                  fill="url(#colorHealthy)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="atRisk"
-                  stackId="1"
-                  stroke="#eab308"
-                  fillOpacity={1}
-                  fill="url(#colorAtRisk)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="critical"
-                  stackId="1"
+                  dataKey="probability"
                   stroke="#ef4444"
-                  fillOpacity={1}
-                  fill="url(#colorCritical)"
+                  strokeWidth={2}
+                  dot={{ fill: '#ef4444', r: 4 }}
                 />
-              </AreaChart>
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="severity"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  dot={{ fill: '#f97316', r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardBody>
+        </Card>
+
+        {/* Issue Probability Forecast */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold">Issue Probability Forecast (Next 9 Months)</h2>
+            <p className="text-sm text-neutral-600 mt-1">Predicted probability of critical issues and severity levels</p>
+          </CardHeader>
+          <CardBody>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={ISSUE_PROBABILITY_FORECAST}>
+                <defs>
+                  <linearGradient id="colorProb" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorSev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis yAxisId="left" label={{ value: 'Probability (%)', angle: -90, position: 'insideLeft' }} />
+                <YAxis yAxisId="right" orientation="right" label={{ value: 'Severity Score', angle: 90, position: 'insideRight' }} />
+                <Tooltip formatter={(value) => value} />
+                <Legend />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="probability"
+                  stroke="#ef4444"
+                  strokeWidth={3}
+                  dot={{ fill: '#ef4444', r: 5 }}
+                  activeDot={{ r: 7 }}
+                  name="Issue Probability (%)"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="severity"
+                  stroke="#f97316"
+                  strokeWidth={3}
+                  dot={{ fill: '#f97316', r: 5 }}
+                  activeDot={{ r: 7 }}
+                  name="Severity Score"
+                />
+              </LineChart>
             </ResponsiveContainer>
           </CardBody>
         </Card>
@@ -181,7 +247,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={COMPLIANCE_BY_TYPE}>
+                <BarChart data={complianceByType.length > 0 ? complianceByType : [{type: 'No Data', score: 0}]}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="type" />
                   <YAxis domain={[0, 100]} />
@@ -199,7 +265,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={SUPPORT_END_DATE_DISTRIBUTION}>
+                <BarChart data={REPLACEMENT_COST_PROJECTION}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="days" />
                   <YAxis />
@@ -308,6 +374,7 @@ export default function ReportsPage() {
           </Card>
         </div>
       </div>
+      )}
     </div>
   )
 }

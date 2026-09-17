@@ -4,7 +4,6 @@ import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/common/Button'
 import { Card, CardBody } from '@/components/common/Card'
-import { VideoPlayer } from '@/components/common/VideoPlayer'
 import {
   Package,
   AlertTriangle,
@@ -41,42 +40,29 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section with Video */}
+      {/* Hero Section */}
       <section className="pt-32 pb-20 bg-gradient-to-br from-primary-50 via-white to-primary-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div>
-              <h1 className="text-5xl lg:text-6xl font-bold text-neutral-900 mb-6 leading-tight">
-                Transform Asset Management Into <span className="text-primary-600">Strategic Value</span>
-              </h1>
-              <p className="text-xl text-neutral-600 mb-8 leading-relaxed">
-                Stop guessing about your assets. Use AI-powered health monitoring to predict failures,
-                optimize replacement budgets, and make data-driven decisions that save millions.
-              </p>
-              <div className="flex gap-4 flex-wrap">
-                <Link href="/auth/signup">
-                  <Button variant="primary" size="lg">
-                    Start Free Trial
-                  </Button>
-                </Link>
-                <Link href="#features">
-                  <Button variant="secondary" size="lg">
-                    Learn More
-                  </Button>
-                </Link>
-              </div>
-              <p className="text-sm text-neutral-500 mt-6">✓ No credit card required • Free for 30 days</p>
-            </div>
-
-            {/* Professional Video Player */}
-            <VideoPlayer
-              title="Asset Lifecycle Impact"
-              description="Learn how aging assets affect employee health, environmental health, and your bottom line"
-              videoUrl="https://www.youtube.com/embed/xtf1eHBlh14"
-              posterImage="https://img.youtube.com/vi/xtf1eHBlh14/maxresdefault.jpg"
-            />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-5xl lg:text-6xl font-bold text-neutral-900 mb-6 leading-tight">
+            Transform Asset Management Into <span className="text-primary-600">Strategic Value</span>
+          </h1>
+          <p className="text-xl text-neutral-600 mb-8 leading-relaxed max-w-2xl mx-auto">
+            Stop guessing about your assets. Use AI-powered health monitoring to predict failures,
+            optimize replacement budgets, and make data-driven decisions that save millions.
+          </p>
+          <div className="flex gap-4 flex-wrap justify-center">
+            <Link href="/auth/signup">
+              <Button variant="primary" size="lg">
+                Start Free Trial
+              </Button>
+            </Link>
+            <Link href="#features">
+              <Button variant="secondary" size="lg">
+                Learn More
+              </Button>
+            </Link>
           </div>
+          <p className="text-sm text-neutral-500 mt-6">✓ No credit card required • Free for 30 days</p>
         </div>
       </section>
 
