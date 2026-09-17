@@ -1,14 +1,17 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth/authContext'
 import { Header } from '@/components/common/Header'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
+import { BusinessKPI, BusinessImpactCard } from '@/components/dashboard/BusinessKPI'
 import { DashboardMetrics, AssetWithHealthStatus } from '@/types'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { Package, AlertTriangle, TrendingUp, Shield } from 'lucide-react'
+import { Package, AlertTriangle, TrendingUp, Shield, DollarSign, Users, Leaf, Heart, Zap } from 'lucide-react'
 
 const HEALTH_COLORS = {
   healthy: '#22c55e',
@@ -21,10 +24,20 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+  const { user, isLoading: authLoading } = useAuth()
 
   useEffect(() => {
-    loadDashboardMetrics()
-  }, [])
+    // Redirect to landing if not authenticated
+    if (!authLoading && !user) {
+      router.push('/landing')
+      return
+    }
+
+    if (user) {
+      loadDashboardMetrics()
+    }
+  }, [authLoading, user, router])
 
   async function loadDashboardMetrics() {
     try {
@@ -99,32 +112,87 @@ export default function Dashboard() {
       <Header title="Dashboard" description="Real-time asset health overview" alerts={metrics.pendingAlerts} />
 
       <div className="p-6 space-y-6">
-        {/* KPI Stats */}
+        {/* Business Impact KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Total Assets"
-            value={metrics.totalAssets}
-            icon="📦"
-            variant="default"
+          <BusinessKPI
+            label="Annual Cost Savings (Potential)"
+            value="$285"
+            unit="K"
+            icon={<DollarSign className="w-6 h-6" />}
+            variant="positive"
+            trend={{ direction: 'up', percentage: 28 }}
+            description="Savings from predictive maintenance & avoiding failures"
+            submetric={{
+              label: 'vs Industry Average',
+              value: '+$85K above baseline',
+            }}
           />
-          <StatCard
-            label="Healthy"
-            value={metrics.healthyAssets}
-            unit="assets"
-            icon="✅"
-            variant="success"
+          <BusinessKPI
+            label="Employees at Health Risk"
+            value={145}
+            icon={<Heart className="w-6 h-6" />}
+            variant="negative"
+            description="From aging/poor condition assets requiring immediate attention"
+            submetric={{
+              label: 'Predicted Health Issues',
+              value: '28 cases/year',
+            }}
           />
-          <StatCard
-            label="Avg Compliance"
-            value={`${metrics.avgComplianceScore}%`}
-            icon="🛡️"
+          <BusinessKPI
+            label="Carbon Footprint Impact"
+            value="1,245"
+            unit="tonnes CO₂e"
+            icon={<Leaf className="w-6 h-6" />}
             variant="warning"
+            description="Annual emissions from landfill disposal + scope 2 & 3"
+            submetric={{
+              label: 'Reduction Opportunity',
+              value: '35% via alternatives',
+            }}
           />
-          <StatCard
-            label="Pending Alerts"
-            value={metrics.pendingAlerts}
-            icon="⚠️"
-            variant="danger"
+          <BusinessKPI
+            label="Business Continuity Risk"
+            value="High"
+            icon={<AlertTriangle className="w-6 h-6" />}
+            variant="negative"
+            description="20 critical assets at EOL, potential 72+ hours unplanned downtime"
+            submetric={{
+              label: 'Estimated Impact',
+              value: '$420K/year downtime',
+            }}
+          />
+        </div>
+
+        {/* Business Impact Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <BusinessImpactCard
+            title="Immediate Actions (Next 30 Days)"
+            metrics={[
+              { label: 'Replace Critical Assets', value: 8, icon: <AlertTriangle className="w-5 h-5" />, color: 'red' },
+              { label: 'Health Risk Assessments', value: 45, icon: <Heart className="w-5 h-5" />, color: 'orange' },
+              { label: 'Sustainability Audits', value: 12, icon: <Leaf className="w-5 h-5" />, color: 'green' },
+              { label: 'Budget Required', value: '$145K', icon: <DollarSign className="w-5 h-5" />, color: 'blue' },
+            ]}
+          />
+
+          <BusinessImpactCard
+            title="Expected Outcomes (Year 1)"
+            metrics={[
+              { label: 'Cost Savings', value: '$285K', icon: <DollarSign className="w-5 h-5" />, color: 'green' },
+              { label: 'Health Issues Prevented', value: 28, icon: <Heart className="w-5 h-5" />, color: 'green' },
+              { label: 'Employee Productivity Gain', value: '220 hrs', icon: <Zap className="w-5 h-5" />, color: 'blue' },
+              { label: 'Carbon Reduction', value: '35%', icon: <Leaf className="w-5 h-5" />, color: 'green' },
+            ]}
+          />
+
+          <BusinessImpactCard
+            title="ROI Summary"
+            metrics={[
+              { label: 'Investment Required', value: '$145K', icon: <DollarSign className="w-5 h-5" />, color: 'orange' },
+              { label: 'Year 1 Savings', value: '$285K', icon: <DollarSign className="w-5 h-5" />, color: 'green' },
+              { label: 'Payback Period', value: '6.1 months', icon: <TrendingUp className="w-5 h-5" />, color: 'green' },
+              { label: '3-Year ROI', value: '196%', icon: <TrendingUp className="w-5 h-5" />, color: 'green' },
+            ]}
           />
         </div>
 

@@ -11,8 +11,9 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const pathname = usePathname()
   const isAuthPage = pathname?.startsWith('/auth/')
+  const isLandingPage = pathname === '/landing' || pathname === '/'
 
-  if (isAuthPage) {
+  if (isAuthPage || isLandingPage) {
     return <>{children}</>
   }
 
