@@ -10,7 +10,17 @@ import { Bell, Trash2, CheckCircle, AlertCircle } from 'lucide-react'
 
 // Generate alerts from imported assets
 const generateAlertsFromAssets = (assets: any[]) => {
-  const alerts = []
+  const alerts: Array<{
+    id: string
+    title: string
+    message: string
+    type: string
+    severity: string
+    assetId: string
+    assetName: string
+    createdAt: string
+    resolved: boolean
+  }> = []
   assets.forEach(asset => {
     if (asset.healthStatus === 'critical') {
       alerts.push({
