@@ -38,13 +38,13 @@ export default function Dashboard() {
   const kpisRef = React.useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Redirect to landing if not authenticated
+    // Only redirect if auth has finished loading AND there's no user
     if (!authLoading && !user) {
-      router.push('/landing')
+      router.push('/')
       return
     }
 
-    if (user) {
+    if (user && !authLoading) {
       // Load persisted data from context
       loadDashboardData()
       loadDashboardMetrics()
