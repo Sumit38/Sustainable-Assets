@@ -304,7 +304,7 @@ function calculateComplianceMetrics(assets: ImportedAsset[]) {
     'Other Regions': 0,
   }
 
-  const standardViolations: Record<ComplianceStandard, { count: number; criticalAssets: number }> = {}
+  const standardViolations: Record<ComplianceStandard, { count: number; criticalAssets: number }> = {} as Record<ComplianceStandard, { count: number; criticalAssets: number }>
 
   let totalAssetsViolating = 0
   let totalFineExposure = 0
