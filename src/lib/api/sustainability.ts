@@ -6,6 +6,7 @@ import {
   OrganizationSustainabilityIndex,
   SustainabilityAlert,
   EOLPathway,
+  ConditionStatus,
 } from '@/types/sustainability'
 import {
   calculateEOLCo2e,
@@ -138,7 +139,7 @@ export async function calculateAndStoreHealthImpact(
   affectedEmployees: number = 1
 ): Promise<AssetHealthImpact> {
   const ageYears = calculateAssetAge(purchaseDate)
-  const condition = determineConditionStatus(ageYears, 70) // Default maintenance score
+  const condition = determineConditionStatus(ageYears, 70) as ConditionStatus // Default maintenance score
 
   const riskFactors = calculateHealthRiskScore(assetType, ageYears, condition)
   const overallScore = calculateOverallHealthRiskScore(riskFactors)
