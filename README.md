@@ -1,6 +1,6 @@
-# Admin Asset Health System
+# Asset Health System
 
-A professional web application for monitoring admin asset health, managing compliance, and generating real-time alerts for office furniture and equipment lifecycle management.
+A professional web application for monitoring asset health, managing compliance, and generating real-time alerts for office furniture and equipment lifecycle management.
 
 ## 🚀 Features
 

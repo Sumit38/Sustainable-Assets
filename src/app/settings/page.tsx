@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Header } from '@/components/common/Header'
+import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
@@ -9,13 +9,12 @@ import { Save, User, Bell, Lock, Database } from 'lucide-react'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
-    appName: 'Admin Asset Health System',
+    appName: 'Asset Health System',
     organizationName: 'Your Organization',
     email: 'admin@assethealth.com',
     phone: '+1-800-000-0000',
     timezone: 'UTC-5',
     language: 'English',
-    theme: 'light',
     alertEmail: true,
     alertSlack: false,
     criticalOnly: false,
@@ -36,7 +35,7 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full">
-      <Header title="Settings" description="Configure application and user preferences" />
+      <PageHeader title="Settings" description="Configure application and user preferences" homeHref="/" />
 
       <div className="p-6 space-y-6 max-w-4xl">
         {/* Success Message */}
@@ -128,22 +127,6 @@ export default function SettingsPage() {
                   value={settings.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
                 />
-              </div>
-            </div>
-            <div>
-              <label className="label">Theme</label>
-              <div className="flex gap-4">
-                {['light', 'dark', 'auto'].map((theme) => (
-                  <label key={theme} className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value={theme}
-                      checked={settings.theme === theme}
-                      onChange={(e) => handleChange('theme', e.target.value)}
-                    />
-                    <span className="text-sm capitalize">{theme}</span>
-                  </label>
-                ))}
               </div>
             </div>
           </CardBody>

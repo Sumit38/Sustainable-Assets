@@ -109,8 +109,8 @@ export interface CategoryTemplate {
 /* Pre-defined Category Templates */
 export const CATEGORY_TEMPLATES: Record<string, CategoryTemplate> = {
   admin: {
-    categoryName: 'Admin Assets',
-    description: 'Office furniture and admin equipment',
+    categoryName: 'Assets',
+    description: 'Office furniture and equipment',
     defaultFields: [
       { fieldName: 'Asset Type', fieldType: 'select', isRequired: true, fieldOrder: 1, selectOptions: ['Chair', 'Table', 'Cubicle Equipment', 'Desk', 'Cabinet'] },
       { fieldName: 'Product Name', fieldType: 'text', isRequired: true, fieldOrder: 2 },

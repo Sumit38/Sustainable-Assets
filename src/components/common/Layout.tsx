@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 
 interface LayoutProps {
@@ -6,6 +9,14 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
+  const pathname = usePathname()
+  const isAuthPage = pathname?.startsWith('/auth/')
+  const isLandingPage = pathname === '/landing' || pathname === '/'
+
+  if (isAuthPage || isLandingPage) {
+    return <>{children}</>
+  }
+
   return (
     <div className="flex h-screen bg-neutral-50">
       {/* Sidebar */}

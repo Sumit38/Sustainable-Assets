@@ -1,7 +1,7 @@
 {
-  "name": "admin-asset-health-system",
+  "name": "asset-health-system",
   "version": "1.0.0",
-  "description": "Professional Admin Asset Health Monitoring & Alert System",
+  "description": "Professional Asset Health Monitoring & Alert System",
   "private": true,
   "scripts": {
     "dev": "next dev",

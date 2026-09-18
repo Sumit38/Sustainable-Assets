@@ -1,0 +1,6 @@
+Asset ID,Asset Type,Product Name,Manufacturer,Date of Manufacture,Last Date of Support,Health Status,Compliance Score,Days Until End of Support,Country,Region,Department,Location,Cost,Purchase Date
+ADM-0001,Chair,Office Chair Model X100,Godrej Interio,2019-06-14,2026-06-14,healthy,95,800,Germany,Europe (GDPR/RoHS),Operations,Berlin Office,15000,2019-06-14
+ADM-0002,Table,Conference Table 200cm,IKEA,2018-03-20,2025-03-20,at-risk,65,200,United States,North America (EPA/OSHA),Sales & Marketing,New York Office,25000,2018-03-20
+ADM-0003,Monitor,Dell UltraSharp 27in,Dell,2017-08-10,2024-08-10,critical,40,15,United Kingdom,Europe (GDPR/RoHS),Engineering,London Office,8000,2017-08-10
+ADM-0004,Laptop,ThinkPad X1 Carbon,Lenovo,2020-01-15,2027-01-15,healthy,85,1900,India,Asia Pacific (Local Regs),Sales & Marketing,Mumbai Office,65000,2020-01-15
+ADM-0005,Cubicle System,Modular Workstation,Durian,2016-12-01,2023-12-01,critical,35,-200,India,Asia Pacific (Local Regs),Operations,Delhi Office,45000,2016-12-01

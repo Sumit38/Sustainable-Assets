@@ -1,6 +1,9 @@
+'use client'
+
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
+import { useRouter, usePathname } from 'next/navigation'
+import { useAuth } from '@/lib/auth/authContext'
 import {
   BarChart3,
   AlertTriangle,
@@ -10,21 +13,57 @@ import {
   LogOut,
   Menu,
   X,
+  Leaf,
+  CheckCircle2,
 } from 'lucide-react'
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: BarChart3 },
+  { name: 'Welcome', href: '/welcome', icon: BarChart3 },
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Assets', href: '/assets', icon: Package },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
+  { name: 'Sustainability', href: '/sustainability', icon: Leaf },
+  { name: 'Risk Justification', href: '/risk-justification', icon: CheckCircle2 },
+  { name: 'Logic Library', href: '/logic-library', icon: FileText },
+  { name: 'Score Library', href: '/score-library', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-export function Sidebar() {
+function LogoutButton() {
   const router = useRouter()
+  const { user, signOut } = useAuth()
+
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      router.push('/auth/signin')
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
+
+  return (
+    <div className="border-t border-neutral-800 p-4">
+      <div className="mb-4 px-4 py-2 text-sm text-neutral-400">
+        {user?.email}
+      </div>
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-3 w-full px-4 py-3 text-neutral-300 hover:bg-neutral-800 rounded-lg transition-colors"
+      >
+        <LogOut className="w-5 h-5" />
+        <span className="text-sm font-medium">Logout</span>
+      </button>
+    </div>
+  )
+}
+
+export function Sidebar() {
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
 
-  const isActive = (href: string) => router.pathname === href
+  const isActive = (href: string) => pathname === href
 
   return (
     <>
@@ -40,17 +79,17 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen w-64 bg-neutral-900 text-white transition-transform duration-300 z-10 ${
+        className={`fixed left-0 top-0 h-screen w-64 bg-neutral-900 text-white transition-transform duration-300 z-10 flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center h-20 border-b border-neutral-800">
+        <div className="flex items-center justify-center h-20 border-b border-neutral-800 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg">AssetHealth</span>
+            <span className="font-bold text-lg">Asset Health System</span>
           </div>
         </div>
 
@@ -77,12 +116,9 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="border-t border-neutral-800 p-4">
-          <button className="flex items-center gap-3 w-full px-4 py-3 text-neutral-300 hover:bg-neutral-800 rounded-lg transition-colors">
-            <LogOut className="w-5 h-5" />
-            <span className="text-sm font-medium">Logout</span>
-          </button>
+        {/* Footer - Always visible */}
+        <div className="flex-shrink-0">
+          <LogoutButton />
         </div>
       </aside>
 
