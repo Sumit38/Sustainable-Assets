@@ -9,7 +9,7 @@ import { StatCard } from '@/components/dashboard/StatCard'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
 import { BusinessKPI, BusinessImpactCard } from '@/components/dashboard/BusinessKPI'
-import { DashboardMetrics, AssetWithHealthStatus, AssetTypeCount, AssetType } from '@/types'
+import { DashboardMetrics, AssetWithHealthStatus, AssetTypeCount, AssetType, SupportStatusCount } from '@/types'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Package, AlertTriangle, TrendingUp, Shield, DollarSign, Users, Leaf, Heart, Zap, Download, Upload, FileText, Bell, File, Check, AlertCircle } from 'lucide-react'
 import { exportDashboardToCSV, exportDashboardToPDF } from '@/lib/export/dashboardExport'
@@ -89,7 +89,7 @@ export default function Dashboard() {
         .sort((a, b) => b.count - a.count)
 
       // Calculate support status (End of Life Timeline)
-      const assetsBySupportStatus = [
+      const assetsBySupportStatus: SupportStatusCount[] = [
         {
           status: 'active',
           count: healthy + atRisk,
