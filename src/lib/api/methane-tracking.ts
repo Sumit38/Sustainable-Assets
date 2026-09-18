@@ -94,7 +94,7 @@ export async function calculateAndStoreOrganizationLandfillImpact(
   // Calculate impact
   const typedAssets = landfillAssets.map((a) => ({
     weightKg: a.total_weight_kg || 0,
-    materials: (a.material_breakdown as Array<{ type: string; weightKg: number }>) || [],
+    materials: (a.material_breakdown as Array<{ type: 'Foam' | 'Fabric' | 'Wood' | 'Plastic' | 'Steel' | 'Paper' | 'Leather'; weightKg: number }>) || [],
   }))
 
   const impact = calculateOrganizationLandfillImpact(typedAssets)
