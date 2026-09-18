@@ -308,8 +308,9 @@ export async function analyzeAlternativesToLandfill(
     },
   }
 
-  const bestOption = Object.entries(alternatives).reduce((prev, [key, val]) =>
-    val.benefit > prev.benefit ? { name: key, ...val } : prev
+  const bestOption = Object.entries(alternatives).reduce((prev: any, [key, val]) =>
+    val.benefit > (prev.benefit || 0) ? { name: key, ...val } : prev,
+    { benefit: 0, reduction: 0, name: '' }
   )
 
   const { data, error } = await supabase
