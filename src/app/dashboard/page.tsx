@@ -34,7 +34,7 @@ export default function Dashboard() {
   const [uploading, setUploading] = useState(false)
   const { importedAssets, calculatedMetrics, setDashboardData, loadDashboardData } = useDashboard()
   const router = useRouter()
-  const { user, isLoading: authLoading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const kpisRef = React.useRef<HTMLDivElement>(null)
 
   useEffect(() => {
