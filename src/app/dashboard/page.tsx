@@ -9,7 +9,7 @@ import { StatCard } from '@/components/dashboard/StatCard'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
 import { BusinessKPI, BusinessImpactCard } from '@/components/dashboard/BusinessKPI'
-import { DashboardMetrics, AssetWithHealthStatus } from '@/types'
+import { DashboardMetrics, AssetWithHealthStatus, AssetTypeCount, AssetType } from '@/types'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Package, AlertTriangle, TrendingUp, Shield, DollarSign, Users, Leaf, Heart, Zap, Download, Upload, FileText, Bell, File, Check, AlertCircle } from 'lucide-react'
 import { exportDashboardToCSV, exportDashboardToPDF } from '@/lib/export/dashboardExport'
@@ -67,9 +67,9 @@ export default function Dashboard() {
       importedAssets.forEach(asset => {
         typeMap.set(asset.assetType, (typeMap.get(asset.assetType) || 0) + 1)
       })
-      const assetsByType = Array.from(typeMap.entries())
+      const assetsByType: AssetTypeCount[] = Array.from(typeMap.entries())
         .map(([type, count]) => ({
-          type,
+          type: type as AssetType,
           count,
           percentage: total > 0 ? Math.round((count / total) * 100) : 0,
         }))
