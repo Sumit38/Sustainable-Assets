@@ -108,7 +108,7 @@ const MOCK_SUSTAINABILITY_DATA = {
       {
         id: '1',
         asset_type: 'Office Chairs (Foam)',
-        severity: 'critical',
+        severity: 'critical' as const,
         escaped_methane_kg: 12.3,
         co2e_equivalent: 344,
         recommendation: 'Prioritize recycling over landfill to save 344kg CO₂e',
@@ -116,7 +116,7 @@ const MOCK_SUSTAINABILITY_DATA = {
       {
         id: '2',
         asset_type: 'Cubicle Padding (Foam)',
-        severity: 'high',
+        severity: 'high' as const,
         escaped_methane_kg: 8.5,
         co2e_equivalent: 238,
         recommendation: 'Consider reuse or refurbishment to avoid methane emissions',
@@ -124,7 +124,7 @@ const MOCK_SUSTAINABILITY_DATA = {
       {
         id: '3',
         asset_type: 'Sofa Units (Fabric)',
-        severity: 'high',
+        severity: 'high' as const,
         escaped_methane_kg: 6.2,
         co2e_equivalent: 174,
         recommendation: 'Reuse in office lounges or donate - environmental impact reduced by 95%',
