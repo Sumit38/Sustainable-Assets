@@ -38,18 +38,11 @@ export default function Dashboard() {
   const kpisRef = React.useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Only redirect if auth has finished loading AND there's no user
-    if (!authLoading && !user) {
-      router.push('/')
-      return
-    }
-
-    if (user && !authLoading) {
-      // Load persisted data from context
-      loadDashboardData()
-      loadDashboardMetrics()
-    }
-  }, [authLoading, user, router])
+    // Load dashboard data regardless of auth state
+    // Users can view dashboard after signup/login
+    loadDashboardData()
+    loadDashboardMetrics()
+  }, [])
 
   async function loadDashboardMetrics() {
     try {
