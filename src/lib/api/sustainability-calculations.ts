@@ -6,6 +6,7 @@ import {
   DiseaseRiskProbabilities,
   OrganizationSustainabilityIndex,
   SustainabilityIndexMetrics,
+  EOLPathway,
 } from '@/types/sustainability'
 
 // ============================================================================
@@ -20,7 +21,7 @@ export function calculateMaterialCo2e(materials: AssetMaterial[]): number {
 
 export function calculateEOLCo2e(
   materials: AssetMaterial[],
-  eolPathway: string,
+  eolPathway: EOLPathway,
   transportDistanceKm?: number
 ): EnvironmentalMetrics {
   const totalWeight = materials.reduce((sum, m) => sum + m.weightKg, 0)
