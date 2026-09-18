@@ -62,6 +62,7 @@ export default function ScoreLibraryPage() {
           unit: '/100',
           range: { min: 0, max: 100 },
           description: 'Indirect emissions from electricity & energy',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -70,6 +71,7 @@ export default function ScoreLibraryPage() {
           unit: '/100',
           range: { min: 0, max: 100 },
           description: 'Other indirect emissions (suppliers, waste)',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -78,6 +80,7 @@ export default function ScoreLibraryPage() {
           unit: '/100',
           range: { min: 0, max: 100 },
           description: 'Normalized energy consumption rating',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -86,6 +89,7 @@ export default function ScoreLibraryPage() {
           unit: 'tonnes CO₂e',
           range: { min: 0, max: null },
           description: 'Annual emissions from all scopes + methane',
+          interpretation: undefined,
           note: undefined,
         },
       ],
@@ -101,6 +105,7 @@ export default function ScoreLibraryPage() {
           unit: '%',
           range: { min: 0, max: 100 },
           description: 'Overall health status of asset portfolio (0=Poor, 100=Excellent)',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -109,6 +114,7 @@ export default function ScoreLibraryPage() {
           unit: '%',
           range: { min: 0, max: 100 },
           description: 'Percentage of employees at health risk from aged assets',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -117,6 +123,7 @@ export default function ScoreLibraryPage() {
           unit: 'people',
           range: { min: 0, max: null },
           description: 'Estimated count of employees exposed to health hazards',
+          interpretation: undefined,
           note: undefined,
         },
       ],
@@ -132,6 +139,7 @@ export default function ScoreLibraryPage() {
           unit: '%',
           range: { min: 0, max: 100 },
           description: 'Percentage of assets needing replacement (critical/EOL)',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -140,6 +148,7 @@ export default function ScoreLibraryPage() {
           unit: 'status',
           range: null,
           description: `Risk level based on critical assets: ${calculatedMetrics.businessContinuityRisk}`,
+          interpretation: undefined,
           note: undefined,
         },
       ],
@@ -155,6 +164,7 @@ export default function ScoreLibraryPage() {
           unit: '%',
           range: { min: 0, max: 100 },
           description: 'Percentage of assets violating compliance standards',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -163,6 +173,7 @@ export default function ScoreLibraryPage() {
           unit: '/100',
           range: { min: 0, max: 100 },
           description: 'Overall compliance risk across all regions and standards',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -171,6 +182,7 @@ export default function ScoreLibraryPage() {
           unit: 'assets',
           range: { min: 0, max: importedAssets.length },
           description: 'Count of assets not meeting applicable compliance standards',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -179,6 +191,7 @@ export default function ScoreLibraryPage() {
           unit: '$',
           range: { min: 0, max: null },
           description: 'Maximum potential fines from current compliance violations',
+          interpretation: undefined,
           note: undefined,
         },
       ],
@@ -194,6 +207,7 @@ export default function ScoreLibraryPage() {
           unit: '$',
           range: { min: 0, max: null },
           description: 'Potential savings from preventing failures and optimizing maintenance',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -202,6 +216,7 @@ export default function ScoreLibraryPage() {
           unit: '$',
           range: { min: 0, max: null },
           description: 'Capital needed for critical/end-of-life asset replacement',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -210,6 +225,7 @@ export default function ScoreLibraryPage() {
           unit: '$',
           range: { min: 0, max: null },
           description: 'Projected first-year savings from asset optimization',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -218,6 +234,7 @@ export default function ScoreLibraryPage() {
           unit: 'months',
           range: { min: 0, max: null },
           description: 'Time to recover investment through operational savings',
+          interpretation: undefined,
           note: undefined,
         },
         {
@@ -226,6 +243,7 @@ export default function ScoreLibraryPage() {
           unit: '%',
           range: { min: 0, max: null },
           description: 'Return on investment over three-year period',
+          interpretation: undefined,
           note: undefined,
         },
       ],
