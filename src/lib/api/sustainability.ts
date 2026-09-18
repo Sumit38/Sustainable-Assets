@@ -5,6 +5,7 @@ import {
   AssetHealthImpact,
   OrganizationSustainabilityIndex,
   SustainabilityAlert,
+  EOLPathway,
 } from '@/types/sustainability'
 import {
   calculateEOLCo2e,
@@ -66,7 +67,7 @@ export async function getAssetMaterials(assetId: string): Promise<AssetMaterial[
 
 export async function calculateAndStoreEnvironmentalMetrics(
   assetId: string,
-  eolPathway: string,
+  eolPathway: EOLPathway,
   transportDistanceKm?: number
 ): Promise<EnvironmentalMetrics> {
   const materials = await getAssetMaterials(assetId)
