@@ -15,6 +15,7 @@ interface BusinessKPIProps {
     percentage: number
   }
   description?: string
+  zeroNote?: string
   submetric?: {
     label: string
     value: string | number
@@ -29,6 +30,7 @@ export function BusinessKPI({
   variant,
   trend,
   description,
+  zeroNote,
   submetric,
 }: BusinessKPIProps) {
   const variantStyles = {
@@ -81,8 +83,8 @@ export function BusinessKPI({
 
         <div className="mb-3">
           <div className={`text-3xl font-bold ${valueStyles[variant]}`}>
-            {value}
-            {unit && <span className="text-lg font-normal text-neutral-500 ml-1">{unit}</span>}
+            {value ?? '0'}
+            {unit && value !== 0 && value !== null && value !== undefined && <span className="text-lg font-normal text-neutral-500 ml-1">{unit}</span>}
           </div>
         </div>
 
@@ -94,6 +96,12 @@ export function BusinessKPI({
         )}
 
         {description && <p className="text-xs text-neutral-600 leading-relaxed">{description}</p>}
+
+        {value === 0 && zeroNote && (
+          <div className="mt-3 p-2 bg-warning-50 border border-warning-200 rounded text-xs text-warning-800">
+            ⚠️ {zeroNote}
+          </div>
+        )}
       </CardBody>
     </Card>
   )

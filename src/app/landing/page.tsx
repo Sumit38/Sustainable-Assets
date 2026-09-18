@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/common/Button'
 import { Card, CardBody } from '@/components/common/Card'
+import { Badge } from '@/components/common/Badge'
 import {
   Package,
   AlertTriangle,
@@ -41,62 +42,135 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-primary-50 via-white to-primary-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl lg:text-6xl font-bold text-neutral-900 mb-6 leading-tight">
-            Transform Asset Management Into <span className="text-primary-600">Strategic Value</span>
+      <section className="pt-40 pb-32 bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 right-10 w-72 h-72 bg-primary-400 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 left-10 w-96 h-96 bg-primary-500 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <p className="text-primary-200 text-sm font-semibold mb-6 uppercase tracking-wider">Enterprise Asset Intelligence</p>
+          <h1 className="text-6xl lg:text-7xl font-bold mb-8 leading-tight">
+            Know Your Assets.<br/><span className="text-primary-300">Control Your Future.</span>
           </h1>
-          <p className="text-xl text-neutral-600 mb-8 leading-relaxed max-w-2xl mx-auto">
-            Stop guessing about your assets. Use AI-powered health monitoring to predict failures,
-            optimize replacement budgets, and make data-driven decisions that save millions.
+          <p className="text-xl text-primary-100 mb-12 leading-relaxed max-w-3xl mx-auto">
+            Real-time health monitoring, predictive failure analysis, and automated compliance tracking.
+            Make data-driven asset decisions that protect employee health, reduce costs, and ensure regulatory compliance.
           </p>
-          <div className="flex gap-4 flex-wrap justify-center">
+
+          <div className="flex gap-4 flex-wrap justify-center mb-12">
             <Link href="/auth/signup">
-              <Button variant="primary" size="lg">
+              <Button
+                variant="primary"
+                size="lg"
+                className="bg-white text-primary-900 hover:bg-primary-50"
+              >
                 Start Free Trial
               </Button>
             </Link>
             <Link href="#features">
-              <Button variant="secondary" size="lg">
-                Learn More
+              <Button
+                variant="secondary"
+                size="lg"
+                className="border-white text-white hover:bg-white/10"
+              >
+                See How It Works
               </Button>
             </Link>
           </div>
-          <p className="text-sm text-neutral-500 mt-6">✓ No credit card required • Free for 30 days</p>
+
+          <p className="text-primary-200 text-sm">✓ No credit card required • Deploy in minutes • Full compliance tracking</p>
         </div>
       </section>
 
-      {/* Problem Statement */}
+      {/* The Problem */}
       <section className="py-20 bg-neutral-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-12 text-neutral-900">
-            The Hidden Cost of Asset Failure
-          </h2>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-neutral-900 mb-4">
+              The True Cost of Ignoring Asset Health
+            </h2>
+            <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
+              Most organizations waste 25-40% of their asset budget on unexpected failures, emergency repairs, and compliance violations
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="border-2 border-danger-100">
+            <Card className="border-l-4 border-l-danger-600 hover:shadow-lg transition-shadow">
               <CardBody>
-                <DollarSign className="w-12 h-12 text-danger-600 mb-4" />
-                <p className="text-sm text-neutral-600 mb-2">Unexpected Failures Cost</p>
-                <p className="text-3xl font-bold text-danger-600">$2.5M+</p>
-                <p className="text-xs text-neutral-500 mt-2">Average annual impact per 1000 assets</p>
+                <div className="flex items-start justify-between mb-4">
+                  <DollarSign className="w-12 h-12 text-danger-600" />
+                  <Badge variant="danger">Financial</Badge>
+                </div>
+                <p className="text-sm text-neutral-600 mb-2">Unexpected Failures</p>
+                <p className="text-3xl font-bold text-danger-600 mb-2">$2.5M+</p>
+                <p className="text-xs text-neutral-500">Annual cost per 1,000 assets across emergency repairs, replacement, and lost productivity</p>
               </CardBody>
             </Card>
 
-            <Card className="border-2 border-warning-100">
+            <Card className="border-l-4 border-l-warning-600 hover:shadow-lg transition-shadow">
               <CardBody>
-                <Users className="w-12 h-12 text-warning-600 mb-4" />
-                <p className="text-sm text-neutral-600 mb-2">Employee Health Issues</p>
-                <p className="text-3xl font-bold text-warning-600">45%</p>
-                <p className="text-xs text-neutral-500 mt-2">Due to aging/poor asset conditions</p>
+                <div className="flex items-start justify-between mb-4">
+                  <Users className="w-12 h-12 text-warning-600" />
+                  <Badge variant="warning">Health</Badge>
+                </div>
+                <p className="text-sm text-neutral-600 mb-2">Employee Health Impact</p>
+                <p className="text-3xl font-bold text-warning-600 mb-2">45%</p>
+                <p className="text-xs text-neutral-500">Increase in musculoskeletal disorders and ergonomic injuries from aging equipment</p>
               </CardBody>
             </Card>
 
-            <Card className="border-2 border-danger-100">
+            <Card className="border-l-4 border-l-danger-600 hover:shadow-lg transition-shadow">
               <CardBody>
-                <Clock className="w-12 h-12 text-danger-600 mb-4" />
+                <div className="flex items-start justify-between mb-4">
+                  <Clock className="w-12 h-12 text-danger-600" />
+                  <Badge variant="danger">Productivity</Badge>
+                </div>
                 <p className="text-sm text-neutral-600 mb-2">Unplanned Downtime</p>
-                <p className="text-3xl font-bold text-danger-600">72 hrs/yr</p>
-                <p className="text-xs text-neutral-500 mt-2">Per employee from asset failures</p>
+                <p className="text-3xl font-bold text-danger-600 mb-2">72 hrs/yr</p>
+                <p className="text-xs text-neutral-500">Per employee lost to equipment failures, outages, and emergency replacements</p>
+              </CardBody>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <Card>
+              <CardBody>
+                <h3 className="font-semibold text-neutral-900 mb-3">Compliance & Risk Exposure</h3>
+                <ul className="space-y-2 text-sm text-neutral-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-danger-600 font-bold">•</span>
+                    <span>GDPR, HIPAA, ISO 27001 violations ($5K-$50K per incident)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-danger-600 font-bold">•</span>
+                    <span>Inadequate audit trails and asset documentation</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-danger-600 font-bold">•</span>
+                    <span>Data breach risk from aging security infrastructure</span>
+                  </li>
+                </ul>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardBody>
+                <h3 className="font-semibold text-neutral-900 mb-3">Environmental Impact</h3>
+                <ul className="space-y-2 text-sm text-neutral-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-success-600 font-bold">•</span>
+                    <span>120+ kg CO₂e per aged asset annually (Scope 2 & 3)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-success-600 font-bold">•</span>
+                    <span>Methane emissions from landfill disposal (28x CO₂ impact)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-success-600 font-bold">•</span>
+                    <span>No visibility into reuse/recycling opportunities</span>
+                  </li>
+                </ul>
               </CardBody>
             </Card>
           </div>

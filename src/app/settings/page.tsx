@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
-import { Moon, Sun } from 'lucide-react'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
@@ -16,7 +15,6 @@ export default function SettingsPage() {
     phone: '+1-800-000-0000',
     timezone: 'UTC-5',
     language: 'English',
-    theme: 'light',
     alertEmail: true,
     alertSlack: false,
     criticalOnly: false,
@@ -33,14 +31,6 @@ export default function SettingsPage() {
 
   const handleChange = (key: string, value: any) => {
     setSettings({ ...settings, [key]: value })
-
-    // Handle theme change with page refresh
-    if (key === 'theme') {
-      localStorage.setItem('theme', value)
-      document.documentElement.setAttribute('data-theme', value)
-      // Refresh the page to apply theme changes
-      setTimeout(() => window.location.reload(), 500)
-    }
   }
 
   return (
@@ -137,38 +127,6 @@ export default function SettingsPage() {
                   value={settings.phone}
                   onChange={(e) => handleChange('phone', e.target.value)}
                 />
-              </div>
-            </div>
-            <div>
-              <label className="label">Theme Preference</label>
-              <p className="text-xs text-neutral-600 mb-3">Changing theme will refresh the page to apply new styles</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {[
-                  { value: 'light', label: 'Light', icon: Sun },
-                  { value: 'dark', label: 'Dark', icon: Moon },
-                  { value: 'auto', label: 'Auto', icon: null },
-                ].map(({ value, label, icon: IconComponent }) => (
-                  <label
-                    key={value}
-                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      settings.theme === value
-                        ? 'border-primary-600 bg-primary-50'
-                        : 'border-neutral-200 hover:border-neutral-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      value={value}
-                      checked={settings.theme === value}
-                      onChange={(e) => handleChange('theme', e.target.value)}
-                      className="w-4 h-4"
-                    />
-                    <div className="flex-1">
-                      {IconComponent ? <IconComponent className="w-5 h-5 text-neutral-600" /> : null}
-                    </div>
-                    <span className="text-sm font-medium capitalize">{label}</span>
-                  </label>
-                ))}
               </div>
             </div>
           </CardBody>

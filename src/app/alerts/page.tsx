@@ -108,10 +108,10 @@ const typeLabels = {
 export default function AlertsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'resolved'>('pending')
   const { importedAssets } = useDashboard()
-
-  const generatedAlerts = useMemo(() => generateAlertsFromAssets(importedAssets), [importedAssets])
-  const initialAlerts = importedAssets.length > 0 ? generatedAlerts : MOCK_ALERTS
-  const [alerts, setAlerts] = useState(initialAlerts)
+  const [alerts, setAlerts] = useState(() => {
+    const generatedAlerts = generateAlertsFromAssets(importedAssets)
+    return importedAssets.length > 0 ? generatedAlerts : MOCK_ALERTS
+  })
 
   const filteredAlerts = alerts.filter((alert) => {
     if (filter === 'pending') return !alert.resolved
@@ -120,11 +120,11 @@ export default function AlertsPage() {
   })
 
   const handleResolveAlert = (id: string) => {
-    setAlerts(alerts.map((alert) => (alert.id === id ? { ...alert, resolved: true } : alert)))
+    setAlerts(prevAlerts => prevAlerts.map((alert) => (alert.id === id ? { ...alert, resolved: true } : alert)))
   }
 
   const handleDeleteAlert = (id: string) => {
-    setAlerts(alerts.filter((alert) => alert.id !== id))
+    setAlerts(prevAlerts => prevAlerts.filter((alert) => alert.id !== id))
   }
 
   const pendingCount = alerts.filter((a) => !a.resolved).length
@@ -259,6 +259,7 @@ export default function AlertsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleResolveAlert(alert.id)}
+                            title="Mark as resolved"
                           >
                             <CheckCircle className="w-4 h-4" />
                             Resolve
@@ -268,6 +269,8 @@ export default function AlertsPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteAlert(alert.id)}
+                          title="Delete alert"
+                          className="hover:bg-danger-50 hover:text-danger-600"
                         >
                           <Trash2 className="w-4 h-4 text-danger-600" />
                         </Button>

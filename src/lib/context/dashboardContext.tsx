@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { ImportedAsset, CalculatedMetrics } from '@/lib/calculations/metricCalculator'
+import { useAuth } from '@/lib/auth/authContext'
+import { loadAssetsFromDatabase, saveAssetsToDatabase } from '@/lib/supabase/assetService'
 
 interface DashboardContextType {
   importedAssets: ImportedAsset[]
@@ -17,27 +19,66 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [importedAssets, setImportedAssets] = useState<ImportedAsset[]>([])
   const [calculatedMetrics, setCalculatedMetrics] = useState<CalculatedMetrics | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const { user } = useAuth()
 
-  // Load data from localStorage on mount
+  // Load data from Supabase on user auth or from localStorage as fallback
   useEffect(() => {
-    const stored = localStorage.getItem('dashboardData')
-    if (stored) {
+    const loadData = async () => {
       try {
-        const { assets, metrics } = JSON.parse(stored)
-        setImportedAssets(assets)
-        setCalculatedMetrics(metrics)
+        // If user is authenticated, load from Supabase
+        if (user?.id) {
+          const dbAssets = await loadAssetsFromDatabase(user.id)
+          if (dbAssets.length > 0) {
+            setImportedAssets(dbAssets)
+            // Clear local storage if we have database data
+            localStorage.removeItem('dashboardData')
+            setIsLoaded(true)
+            return
+          }
+        }
+
+        // Fallback to localStorage if no user or no database data
+        const stored = localStorage.getItem('dashboardData')
+        if (stored) {
+          const { assets, metrics } = JSON.parse(stored)
+          setImportedAssets(assets)
+          setCalculatedMetrics(metrics)
+        }
       } catch (error) {
-        console.error('Failed to load dashboard data from localStorage:', error)
+        console.error('Failed to load dashboard data:', error)
+        // Try localStorage as final fallback
+        const stored = localStorage.getItem('dashboardData')
+        if (stored) {
+          try {
+            const { assets, metrics } = JSON.parse(stored)
+            setImportedAssets(assets)
+            setCalculatedMetrics(metrics)
+          } catch (e) {
+            console.error('Failed to load from localStorage:', e)
+          }
+        }
+      } finally {
+        setIsLoaded(true)
       }
     }
-    setIsLoaded(true)
-  }, [])
 
-  const setDashboardData = (assets: ImportedAsset[], metrics: CalculatedMetrics) => {
+    loadData()
+  }, [user?.id])
+
+  const setDashboardData = async (assets: ImportedAsset[], metrics: CalculatedMetrics) => {
     setImportedAssets(assets)
     setCalculatedMetrics(metrics)
 
-    // Persist to localStorage
+    // Save to Supabase if user is authenticated
+    if (user?.id) {
+      try {
+        await saveAssetsToDatabase(user.id, assets)
+      } catch (error) {
+        console.error('Failed to save assets to database:', error)
+      }
+    }
+
+    // Also persist to localStorage as fallback
     try {
       localStorage.setItem(
         'dashboardData',
@@ -48,13 +89,37 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const clearDashboardData = () => {
+  const clearDashboardData = async () => {
     setImportedAssets([])
     setCalculatedMetrics(null)
     localStorage.removeItem('dashboardData')
+
+    // Delete from Supabase if user is authenticated
+    if (user?.id) {
+      try {
+        const { deleteUserAssets } = await import('@/lib/supabase/assetService')
+        await deleteUserAssets(user.id)
+      } catch (error) {
+        console.error('Failed to delete assets from database:', error)
+      }
+    }
   }
 
-  const loadDashboardData = () => {
+  const loadDashboardData = async () => {
+    // Load from Supabase if user is authenticated
+    if (user?.id) {
+      try {
+        const dbAssets = await loadAssetsFromDatabase(user.id)
+        if (dbAssets.length > 0) {
+          setImportedAssets(dbAssets)
+          return
+        }
+      } catch (error) {
+        console.error('Failed to load from database:', error)
+      }
+    }
+
+    // Fallback to localStorage
     const stored = localStorage.getItem('dashboardData')
     if (stored) {
       try {

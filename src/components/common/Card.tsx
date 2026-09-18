@@ -22,10 +22,11 @@ export function Card({ children, className = '', onClick }: CardProps) {
 interface CardHeaderProps {
   children: React.ReactNode
   className?: string
+  onClick?: () => void
 }
 
-export function CardHeader({ children, className = '' }: CardHeaderProps) {
-  return <div className={`card-header ${className}`}>{children}</div>
+export function CardHeader({ children, className = '', onClick }: CardHeaderProps) {
+  return <div className={`card-header ${className}`} onClick={onClick} role={onClick ? 'button' : undefined}>{children}</div>
 }
 
 interface CardBodyProps {

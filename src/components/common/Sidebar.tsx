@@ -19,12 +19,14 @@ import {
 
 const navigation = [
   { name: 'Welcome', href: '/welcome', icon: BarChart3 },
-  { name: 'Dashboard', href: '/', icon: BarChart3 },
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Assets', href: '/assets', icon: Package },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Sustainability', href: '/sustainability', icon: Leaf },
   { name: 'Risk Justification', href: '/risk-justification', icon: CheckCircle2 },
+  { name: 'Logic Library', href: '/logic-library', icon: FileText },
+  { name: 'Score Library', href: '/score-library', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
@@ -77,12 +79,12 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen w-64 bg-neutral-900 text-white transition-transform duration-300 z-10 ${
+        className={`fixed left-0 top-0 h-screen w-64 bg-neutral-900 text-white transition-transform duration-300 z-10 flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center h-20 border-b border-neutral-800">
+        <div className="flex items-center justify-center h-20 border-b border-neutral-800 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
@@ -114,8 +116,10 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Footer */}
-        <LogoutButton />
+        {/* Footer - Always visible */}
+        <div className="flex-shrink-0">
+          <LogoutButton />
+        </div>
       </aside>
 
       {/* Mobile Overlay */}

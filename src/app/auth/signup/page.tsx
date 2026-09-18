@@ -13,6 +13,7 @@ export default function SignUpPage() {
   const { signUp } = useAuth()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,7 +26,7 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
-      if (!fullName || !email || !password || !confirmPassword) {
+      if (!fullName || !email || !phone || !password || !confirmPassword) {
         throw new Error('Please fill in all fields')
       }
       if (password !== confirmPassword) {
@@ -33,6 +34,9 @@ export default function SignUpPage() {
       }
       if (password.length < 6) {
         throw new Error('Password must be at least 6 characters')
+      }
+      if (phone.length < 10) {
+        throw new Error('Please enter a valid phone number')
       }
 
       await signUp(email, password, fullName)
@@ -88,6 +92,20 @@ export default function SignUpPage() {
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="John Doe"
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="+1-800-000-0000"
                   disabled={loading}
                 />
               </div>

@@ -37,6 +37,7 @@ export interface CalculatedMetrics {
   employeesAtHealthRisk: number
   carbonFootprintTonnes: number
   businessContinuityRisk: string
+  globalPollutionIndex: number // Based on scopes & energy efficiency
 
   // Compliance
   globalComplianceViolationRate: number
@@ -66,6 +67,15 @@ export interface CalculatedMetrics {
   paybackPeriodMonths: number
   threeYearROI: number
   investmentRequired: number
+
+  // Score Library - Supplementary Metrics
+  scope2EmissionIndex: number
+  scope3EmissionIndex: number
+  energyEfficiencyIndex: number
+  assetReplacementRatio: number
+  averageAssetHealth: number
+  healthRiskPercentage: number
+  complianceRiskByRegion: Record<string, number>
 }
 
 /**
@@ -104,6 +114,7 @@ export function calculateMetrics(assets: ImportedAsset[]): CalculatedMetrics {
       employeesAtHealthRisk: 0,
       carbonFootprintTonnes: 0,
       businessContinuityRisk: 'Low',
+      globalPollutionIndex: 0,
       globalComplianceViolationRate: 0,
       potentialFineExposure: 0,
       assetsViolatingStandards: 0,
@@ -120,6 +131,13 @@ export function calculateMetrics(assets: ImportedAsset[]): CalculatedMetrics {
       paybackPeriodMonths: 0,
       threeYearROI: 0,
       investmentRequired: 0,
+      scope2EmissionIndex: 0,
+      scope3EmissionIndex: 0,
+      energyEfficiencyIndex: 0,
+      assetReplacementRatio: 0,
+      averageAssetHealth: 0,
+      healthRiskPercentage: 0,
+      complianceRiskByRegion: {},
     }
   }
 
@@ -137,11 +155,26 @@ export function calculateMetrics(assets: ImportedAsset[]): CalculatedMetrics {
   // Calculate ROI
   const roi = calculateROI(processedAssets, costMetrics)
 
+  // Calculate supplementary metrics for Score Library
+  const supplementaryMetrics = calculateSupplementaryMetrics(
+    processedAssets,
+    healthMetrics,
+    carbonMetrics,
+    complianceMetrics
+  )
+
+  // Calculate Global Pollution Index using user-defined formula
+  const globalPollutionIndex = calculateGlobalPollutionIndexNew(
+    processedAssets,
+    supplementaryMetrics
+  )
+
   return {
     annualCostSavings: costMetrics.potentialAnnualSavings,
     employeesAtHealthRisk: healthMetrics.employeesAtRisk,
     carbonFootprintTonnes: carbonMetrics.totalCO2e / 1000,
     businessContinuityRisk: calculateContinuityRisk(processedAssets),
+    globalPollutionIndex,
     globalComplianceViolationRate: complianceMetrics.violationRate,
     potentialFineExposure: complianceMetrics.totalFineExposure,
     assetsViolatingStandards: complianceMetrics.totalAssetsViolating,
@@ -153,6 +186,13 @@ export function calculateMetrics(assets: ImportedAsset[]): CalculatedMetrics {
     paybackPeriodMonths: roi.paybackMonths,
     threeYearROI: roi.threeYearROI,
     investmentRequired: costMetrics.investmentRequired,
+    scope2EmissionIndex: supplementaryMetrics.scope2Index,
+    scope3EmissionIndex: supplementaryMetrics.scope3Index,
+    energyEfficiencyIndex: supplementaryMetrics.energyIndex,
+    assetReplacementRatio: supplementaryMetrics.replacementRatio,
+    averageAssetHealth: supplementaryMetrics.avgHealth,
+    healthRiskPercentage: supplementaryMetrics.healthRiskPct,
+    complianceRiskByRegion: supplementaryMetrics.complianceByRegion,
   }
 }
 
@@ -243,10 +283,16 @@ function calculateCarbonImpact(assets: ImportedAsset[]) {
     }
   }
 
+  // Estimate scope 2 and 3 (approximately 30% and 40% of operational emissions)
+  const scope2Estimate = totalOperationalEmissions * 0.3
+  const scope3Estimate = totalOperationalEmissions * 0.4
+
   return {
     totalCO2e: totalOperationalEmissions + totalEndOfLifeEmissions,
     operationalCO2e: totalOperationalEmissions,
     endOfLifeMethane: totalEndOfLifeEmissions,
+    scope2: scope2Estimate,
+    scope3: scope3Estimate,
   }
 }
 
@@ -392,4 +438,121 @@ function calculateContinuityRisk(assets: ImportedAsset[]): string {
   if (riskPercentage > 20) return 'High'
   if (riskPercentage > 10) return 'Medium'
   return 'Low'
+}
+
+/**
+ * Calculate supplementary metrics for Score Library
+ */
+function calculateSupplementaryMetrics(
+  assets: ImportedAsset[],
+  healthMetrics: any,
+  carbonMetrics: any,
+  complianceMetrics: any
+): any {
+  if (assets.length === 0) {
+    return {
+      scope2Index: 0,
+      scope3Index: 0,
+      energyIndex: 0,
+      replacementRatio: 0,
+      avgHealth: 0,
+      healthRiskPct: 0,
+      complianceByRegion: {},
+    }
+  }
+
+  const replaceableAssets = assets.filter(
+    a => a.healthStatus === 'critical' || a.healthStatus === 'end-of-life'
+  ).length
+  const replacementRatio = (replaceableAssets / assets.length) * 100
+
+  // Calculate average health score
+  const healthScores = {
+    healthy: 100,
+    'at-risk': 50,
+    critical: 25,
+    'end-of-life': 0,
+  }
+  const avgHealth =
+    assets.reduce((sum, a) => sum + healthScores[a.healthStatus], 0) / assets.length
+
+  const healthRiskPct = (healthMetrics.employeesAtRisk / Math.max(1, assets.length)) * 100
+
+  // Calculate indices as ratios of actual to replaceable (0-100 scale)
+  // Replaceable baseline: typical replacement values for office assets
+  const replaceableScope2 = Math.max(1, replaceableAssets * 0.5) // ~0.5 tonnes CO2e per replaceable asset
+  const replaceableScope3 = Math.max(1, replaceableAssets * 0.8) // ~0.8 tonnes CO2e per replaceable asset (EOL)
+  const replaceableEnergy = Math.max(1, assets.length * 0.3) // ~0.3 tonnes CO2e per asset (annual energy)
+
+  const actualScope2 = Math.max(0, carbonMetrics.scope2 || 0)
+  const actualScope3 = Math.max(0, carbonMetrics.scope3 || 0)
+  const actualEnergy = Math.max(0, carbonMetrics.operationalCO2e || 0)
+
+  // Calculate ratios (actual / replaceable) normalized to 0-100 scale
+  const scope2Index = Math.min(100, Math.max(0, (actualScope2 / replaceableScope2) * 100))
+  const scope3Index = Math.min(100, Math.max(0, (actualScope3 / replaceableScope3) * 100))
+  const energyIndex = Math.min(100, Math.max(0, (actualEnergy / replaceableEnergy) * 100))
+
+  return {
+    scope2Index: isNaN(scope2Index) ? 50 : scope2Index,
+    scope3Index: isNaN(scope3Index) ? 50 : scope3Index,
+    energyIndex: isNaN(energyIndex) ? 50 : energyIndex,
+    replacementRatio: Math.round(replacementRatio),
+    avgHealth: Math.round(avgHealth),
+    healthRiskPct: Math.round(healthRiskPct),
+    complianceByRegion: complianceMetrics.violationsByRegion || {},
+  }
+}
+
+/**
+ * Calculate Global Pollution Index using the specified formula:
+ * GPI = Average of [(Actual Scope 2 / Replaceable Scope 2) +
+ *                   (Actual Scope 3 / Replaceable Scope 3) +
+ *                   (Actual Energy / Replaceable Energy)] ×
+ *       (Number of Replaceable Assets / Total Assets)
+ */
+function calculateGlobalPollutionIndexNew(
+  assets: ImportedAsset[],
+  supplementaryMetrics: any
+): number {
+  if (assets.length === 0) {
+    console.warn('GPI = 0: No assets imported')
+    return 0
+  }
+
+  const replaceableAssets = assets.filter(
+    a => a.healthStatus === 'critical' || a.healthStatus === 'end-of-life'
+  ).length
+
+  // Get the ratios (normalized to 0-1 scale)
+  const scope2Ratio = Math.min(1, (supplementaryMetrics.scope2Index / 100) || 0.3)
+  const scope3Ratio = Math.min(1, (supplementaryMetrics.scope3Index / 100) || 0.4)
+  const energyRatio = Math.min(1, (supplementaryMetrics.energyIndex / 100) || 0.3)
+
+  // Calculate average of ratios (0-1 scale)
+  const averageRatio = (scope2Ratio + scope3Ratio + energyRatio) / 3
+
+  // Asset replacement factor (0-1 scale)
+  const assetReplacementFactor = Math.min(1, replaceableAssets / Math.max(1, assets.length))
+
+  // Final Global Pollution Index (0-100 scale)
+  const gpi = averageRatio * assetReplacementFactor * 100
+
+  const result = Math.max(0, Math.min(100, Math.round(gpi)))
+
+  // Log debug info if GPI is 0
+  if (result === 0) {
+    console.warn('GPI = 0 - Debug Info:', {
+      totalAssets: assets.length,
+      replaceableAssets,
+      assetReplacementFactor: assetReplacementFactor.toFixed(2),
+      scope2Index: supplementaryMetrics.scope2Index,
+      scope3Index: supplementaryMetrics.scope3Index,
+      energyIndex: supplementaryMetrics.energyIndex,
+      averageRatio: averageRatio.toFixed(3),
+      reason: assetReplacementFactor === 0 ? 'No critical or end-of-life assets' : 'Indices too low',
+    })
+  }
+
+  return result
 }
