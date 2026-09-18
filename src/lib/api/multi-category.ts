@@ -218,7 +218,7 @@ export async function updateImportLog(
     .from('data_import_logs')
     .update({
       ...updates,
-      completed_at: updates.import_status === 'completed' ? new Date().toISOString() : null,
+      completed_at: updates.importStatus === 'completed' ? new Date().toISOString() : null,
     })
     .eq('id', logId)
     .select()
