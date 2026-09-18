@@ -300,7 +300,7 @@ export default function ScoreLibraryPage() {
                               ? metric.value.toFixed(0)
                               : metric.value ?? '0'}
                           </div>
-                          {metric.value !== 0 && metric.value !== null && metric.value !== undefined && <span className="text-xs text-neutral-500">{metric.unit}</span>}
+                          {metric.value !== 0 && metric.value !== null && metric.value !== undefined && metric.unit !== '/100' && <span className="text-xs text-neutral-500">{metric.unit}</span>}
                         </div>
                       )}
                       {metric.range && !metric.range.max && (
@@ -310,7 +310,7 @@ export default function ScoreLibraryPage() {
                               ? `$${(metric.value / 1000).toFixed(0)}K`
                               : metric.value ?? '$0K'}
                           </div>
-                          {metric.value !== 0 && metric.value !== null && metric.value !== undefined && <span className="text-xs text-neutral-500">{metric.unit}</span>}
+                          {metric.value !== 0 && metric.value !== null && metric.value !== undefined && metric.unit !== '/100' && <span className="text-xs text-neutral-500">{metric.unit}</span>}
                         </div>
                       )}
                       {!metric.range && (
