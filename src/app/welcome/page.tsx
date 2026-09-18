@@ -147,7 +147,7 @@ export default function WelcomePage() {
             Begin monitoring your asset health and make data-driven decisions today
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Link href="/">
+            <Link href="/dashboard">
               <Button variant="primary" size="lg">
                 Go to Dashboard
               </Button>
