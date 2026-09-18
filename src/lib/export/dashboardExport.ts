@@ -56,9 +56,9 @@ End of Life Assets: ${metrics.endOfLifeAssets}
 ═══════════════════════════════════════════
 HEALTH METRICS
 ═══════════════════════════════════════════
-Average Health Score: ${metrics.averageHealthScore?.toFixed(2) || 'N/A'}
-Compliance Score: ${metrics.complianceScore?.toFixed(2) || 'N/A'}
+Average Compliance Score: ${metrics.avgComplianceScore?.toFixed(2) || 'N/A'}
 Pending Alerts: ${metrics.pendingAlerts}
+Resolved Alerts: ${metrics.resolvedAlerts}
 
 ═══════════════════════════════════════════
 BUSINESS IMPACT
