@@ -460,7 +460,7 @@ export default function DLEPage() {
           </CardHeader>
           <CardBody>
             <div className="text-3xl font-bold text-success-600 mb-2">
-              ${(parseInt(dleMetrics.totalLithiumValue) + (nonDLEAssets.length * 50)).toLocaleString()}
+              ${(dleMetrics.totalLithiumValue + (nonDLEAssets.length * 50)).toLocaleString()}
             </div>
             <p className="text-sm text-success-800">
               Combined value from DLE ({dleSuitableAssets.length} assets) + Alternative pathways ({nonDLEAssets.length} assets)
