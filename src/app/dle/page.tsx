@@ -1,329 +1,470 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
+import Link from 'next/link'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
+import { Button } from '@/components/common/Button'
 import { useDashboard } from '@/lib/context/dashboardContext'
-import { TrendingUp, Battery, Droplet, DollarSign, AlertTriangle, CheckCircle, Zap } from 'lucide-react'
+import { isDLESuitable, getAssetProfile } from '@/lib/data/assetMaterialDatabase'
+import { TrendingUp, Battery, Droplet, DollarSign, AlertTriangle, CheckCircle, AlertCircle, Zap } from 'lucide-react'
 
 export default function DLEPage() {
   const { importedAssets, calculatedMetrics } = useDashboard()
 
-  // Mock DLE calculations (would use actual data in production)
-  const dleMetrics = {
-    totalRecoverableLithium: 45.2, // kg
-    dleSuitableAssets: 23,
-    totalLithiumValue: 1240,
-    co2eSavingsVsDLE: 450, // kg CO2e vs traditional recycling
-    timeSensitiveAssets: 8,
-    recoverableValue: 3400,
-    dleCandidatePercentage: 18.4,
+  // Filter DLE-suitable vs non-DLE assets
+  const dleSuitableAssets = importedAssets.filter(asset => isDLESuitable(asset.assetType))
+  const nonDLEAssets = importedAssets.filter(asset => !isDLESuitable(asset.assetType))
+
+  // Calculate realistic DLE metrics ONLY for DLE-suitable assets
+  const calculateDLEMetrics = () => {
+    let totalLithium = 0
+    let totalValue = 0
+    let totalCO2e = 0
+
+    dleSuitableAssets.forEach(asset => {
+      const profile = getAssetProfile(asset.assetType)
+      if (profile) {
+        const avgLithium = (profile.lithiumContent.min + profile.lithiumContent.max) / 2
+        const avgValue = (profile.recoveryValue.min + profile.recoveryValue.max) / 2
+        totalLithium += avgLithium
+        totalValue += avgValue
+        totalCO2e += profile.co2eSavingsVsPrimaryMining
+      }
+    })
+
+    return {
+      totalRecoverableLithium: totalLithium.toFixed(2),
+      dleSuitableAssets: dleSuitableAssets.length,
+      totalLithiumValue: Math.round(totalValue),
+      co2eSavingsVsDLE: totalCO2e,
+      dleCandidatePercentage: importedAssets.length > 0 ? ((dleSuitableAssets.length / importedAssets.length) * 100).toFixed(1) : 0,
+    }
   }
 
-  const dleAssets = [
-    {
-      id: 'ASSET-001',
-      name: 'Laptop - Dell XPS',
-      lithiumContent: 0.08,
-      currentValue: 12,
-      projectedValue2027: 18,
-      condition: 'Good',
-      timeSensitivity: 'Urgent (12 months)',
-      dleSuitable: true,
-    },
-    {
-      id: 'ASSET-002',
-      name: 'Smartphone - iPhone 12',
-      lithiumContent: 0.11,
-      currentValue: 8,
-      projectedValue2027: 14,
-      condition: 'Fair',
-      timeSensitivity: 'Important (18 months)',
-      dleSuitable: true,
-    },
-    {
-      id: 'ASSET-003',
-      name: 'Tablet - iPad',
-      lithiumContent: 0.15,
-      currentValue: 15,
-      projectedValue2027: 24,
-      condition: 'Good',
-      timeSensitivity: 'Normal (24+ months)',
-      dleSuitable: true,
-    },
-  ]
+  const dleMetrics = calculateDLEMetrics()
 
+  // Calculate portfolio composition
+  const portfolioComposition = {
+    electronics: importedAssets.filter(a => ['Laptop', 'Tablet', 'Smartphone', 'Desktop Computer', 'Monitor', 'Server', 'UPS System', 'Network Router'].includes(a.assetType)).length,
+    furniture: importedAssets.filter(a => ['Chair', 'Table', 'Desk', 'Filing Cabinet', 'Cubicle System'].includes(a.assetType)).length,
+    other: importedAssets.filter(a => !['Laptop', 'Tablet', 'Smartphone', 'Desktop Computer', 'Monitor', 'Server', 'UPS System', 'Network Router', 'Chair', 'Table', 'Desk', 'Filing Cabinet', 'Cubicle System'].includes(a.assetType)).length,
+  }
+
+  // ===== SCENARIO 1: No assets imported =====
+  if (importedAssets.length === 0) {
+    return (
+      <div className="w-full">
+        <PageHeader
+          title="Asset Recovery Analytics"
+          description="Optimize your asset portfolio with DLE and alternative recovery strategies"
+          homeHref="/"
+        />
+        <div className="p-6 max-w-6xl">
+          <Card className="bg-blue-50 border-blue-200">
+            <CardBody className="text-center py-12">
+              <AlertCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Assets Uploaded</h3>
+              <p className="text-sm text-neutral-600 mb-6">
+                Upload your asset inventory to see recovery opportunities including DLE analytics, refurbishment options, and more.
+              </p>
+              <Link href="/dashboard">
+                <Button variant="primary">Go to Dashboard & Import Assets</Button>
+              </Link>
+            </CardBody>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // ===== SCENARIO 2: Only non-DLE assets (No DLE-suitable items) =====
+  if (dleSuitableAssets.length === 0) {
+    return (
+      <div className="w-full">
+        <PageHeader
+          title="Asset Recovery Analytics"
+          description="Optimize your asset portfolio with alternative recovery strategies"
+          homeHref="/"
+        />
+        <div className="p-6 space-y-6 max-w-6xl">
+          {/* Alert: No DLE-suitable assets */}
+          <Card className="bg-warning-50 border-warning-200">
+            <CardBody>
+              <div className="flex gap-4">
+                <AlertTriangle className="w-6 h-6 text-warning-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-warning-900 mb-2">ℹ️ No DLE-Suitable Assets Detected</h3>
+                  <p className="text-sm text-warning-800 mb-2">
+                    Your portfolio consists of <strong>{portfolioComposition.furniture} furniture items</strong> and <strong>{portfolioComposition.other} other assets</strong>.
+                    Direct Lithium Extraction is not applicable to your current asset mix.
+                  </p>
+                  <p className="text-sm text-warning-800">
+                    However, you still have significant recovery opportunities through alternative pathways!
+                  </p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Portfolio Composition */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">Your Asset Composition</h3>
+            </CardHeader>
+            <CardBody>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200">
+                  <p className="text-sm text-neutral-600 mb-2">Electronics</p>
+                  <p className="text-3xl font-bold text-neutral-900">{portfolioComposition.electronics}</p>
+                  <p className="text-xs text-neutral-500">{((portfolioComposition.electronics / importedAssets.length) * 100).toFixed(0)}% of portfolio</p>
+                </div>
+                <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200">
+                  <p className="text-sm text-neutral-600 mb-2">Furniture</p>
+                  <p className="text-3xl font-bold text-neutral-900">{portfolioComposition.furniture}</p>
+                  <p className="text-xs text-neutral-500">{((portfolioComposition.furniture / importedAssets.length) * 100).toFixed(0)}% of portfolio</p>
+                </div>
+                <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200">
+                  <p className="text-sm text-neutral-600 mb-2">Other Assets</p>
+                  <p className="text-3xl font-bold text-neutral-900">{portfolioComposition.other}</p>
+                  <p className="text-xs text-neutral-500">{((portfolioComposition.other / importedAssets.length) * 100).toFixed(0)}% of portfolio</p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Empty DLE Cards (Greyed out) */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 opacity-50">
+            <Card>
+              <CardBody>
+                <p className="text-xs text-neutral-500 mb-2">Recoverable Lithium</p>
+                <p className="text-3xl font-bold text-neutral-300">—</p>
+                <p className="text-xs text-neutral-400">Not applicable</p>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <p className="text-xs text-neutral-500 mb-2">DLE-Suitable Assets</p>
+                <p className="text-3xl font-bold text-neutral-300">0</p>
+                <p className="text-xs text-neutral-400">None detected</p>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <p className="text-xs text-neutral-500 mb-2">DLE Recovery Value</p>
+                <p className="text-3xl font-bold text-neutral-300">$0</p>
+                <p className="text-xs text-neutral-400">Not applicable</p>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <p className="text-xs text-neutral-500 mb-2">CO₂e Savings (DLE)</p>
+                <p className="text-3xl font-bold text-neutral-300">—</p>
+                <p className="text-xs text-neutral-400">Not applicable</p>
+              </CardBody>
+            </Card>
+          </div>
+
+          {/* Alternative Recovery Strategies */}
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold">💰 Alternative Recovery Strategies</h3>
+            </CardHeader>
+            <CardBody>
+              <div className="space-y-3">
+                <div className="p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold text-neutral-900">Refurbishment</h4>
+                      <p className="text-sm text-neutral-600">Extend asset lifecycle through refurbishment and resale</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-primary-600">${portfolioComposition.furniture * 40}</p>
+                      <p className="text-xs text-neutral-500">{portfolioComposition.furniture} assets</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold text-neutral-900">Donation</h4>
+                      <p className="text-sm text-neutral-600">Partner with NGOs for charitable furniture donation programs</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-green-600">Tax Deduction</p>
+                      <p className="text-xs text-neutral-500">+Social Impact</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold text-neutral-900">Scrap Metal Recovery</h4>
+                      <p className="text-sm text-neutral-600">Capture value from metal components in furniture</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-warning-600">${portfolioComposition.furniture * 15}</p>
+                      <p className="text-xs text-neutral-500">Metal recovery</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Recommendation */}
+          <Card className="bg-gradient-to-r from-primary-50 to-primary-100 border-primary-200">
+            <CardHeader>
+              <h3 className="text-lg font-semibold text-primary-900">📊 Next Steps</h3>
+            </CardHeader>
+            <CardBody className="space-y-2 text-sm text-primary-900">
+              <p>✓ Focus on REFURBISHMENT: Extend asset lifecycle through refurbishment programs</p>
+              <p>✓ DONATE: Partner with NGOs for furniture donation and get tax benefits</p>
+              <p>✓ SCRAP RECOVERY: Capture value from metal components</p>
+              <p>✓ If you acquire electronics in future, DLE will become applicable</p>
+            </CardBody>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // ===== SCENARIO 3: Mixed portfolio OR DLE-suitable assets =====
   return (
     <div className="w-full">
       <PageHeader
-        title="DLE (Direct Lithium Extraction) Analytics"
-        description="Optimize asset recovery strategy for maximum environmental & financial impact"
+        title="Asset Recovery Analytics"
+        description="Maximize recovery value with DLE and alternative recovery strategies"
         homeHref="/"
       />
 
       <div className="p-6 space-y-6 max-w-6xl">
-        {/* DLE Overview */}
-        <div className="bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg p-6">
-          <div className="flex items-start gap-4">
-            <Battery className="w-8 h-8 text-primary-600 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-primary-900 mb-2">What is DLE?</h3>
-              <p className="text-sm text-primary-800 mb-3">
-                Direct Lithium Extraction (DLE) is a faster, more sustainable alternative to traditional lithium mining. Using engineered systems (sorbents, membranes, solvents), DLE can extract lithium from brine within hours instead of 2 years, reducing water consumption by 95% and enabling processing of geothermal fluids, oilfield wastewater, and recycled materials.
+        {/* Portfolio Alert if Mixed */}
+        {nonDLEAssets.length > 0 && (
+          <Card className="bg-blue-50 border-blue-200">
+            <CardBody>
+              <p className="text-sm text-blue-800">
+                📊 Your portfolio has <strong>{dleSuitableAssets.length} DLE-suitable</strong> asset(s) and <strong>{nonDLEAssets.length} non-DLE</strong> asset(s).
+                Below shows recovery strategies for your complete asset mix.
               </p>
-              <div className="flex gap-4 text-xs">
-                <div>
-                  <span className="font-semibold text-primary-900">95%</span>
-                  <p className="text-primary-700">Less water</p>
-                </div>
-                <div>
-                  <span className="font-semibold text-primary-900">Hours</span>
-                  <p className="text-primary-700">vs. 2 years</p>
-                </div>
-                <div>
-                  <span className="font-semibold text-primary-900">73%</span>
-                  <p className="text-primary-700">Lower CO₂ footprint</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-neutral-600 mb-2">Recoverable Lithium</p>
-                  <p className="text-3xl font-bold text-primary-600">{dleMetrics.totalRecoverableLithium}</p>
-                  <p className="text-xs text-neutral-500 mt-1">kg from current inventory</p>
-                </div>
-                <Battery className="w-8 h-8 text-primary-300" />
-              </div>
             </CardBody>
           </Card>
+        )}
 
-          <Card>
-            <CardBody>
-              <div className="flex items-center justify-between">
+        {/* DLE SECTION - Only shows if dleSuitableAssets.length > 0 */}
+        {dleSuitableAssets.length > 0 && (
+          <>
+            {/* DLE Overview */}
+            <div className="bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg p-6">
+              <div className="flex items-start gap-4">
+                <Battery className="w-8 h-8 text-primary-600 flex-shrink-0" />
                 <div>
-                  <p className="text-sm text-neutral-600 mb-2">DLE Suitable Assets</p>
-                  <p className="text-3xl font-bold text-success-600">{dleMetrics.dleSuitableAssets}</p>
-                  <p className="text-xs text-neutral-500 mt-1">({dleMetrics.dleCandidatePercentage}% of inventory)</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-success-300" />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-neutral-600 mb-2">Recovery Value (Current)</p>
-                  <p className="text-3xl font-bold text-warning-600">${dleMetrics.totalLithiumValue}</p>
-                  <p className="text-xs text-neutral-500 mt-1">at current market rates</p>
-                </div>
-                <DollarSign className="w-8 h-8 text-warning-300" />
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-neutral-600 mb-2">CO₂e Savings (vs. Primary)</p>
-                  <p className="text-3xl font-bold text-green-600">{dleMetrics.co2eSavingsVsDLE}</p>
-                  <p className="text-xs text-neutral-500 mt-1">kg CO₂e avoided</p>
-                </div>
-                <Droplet className="w-8 h-8 text-green-300" />
-              </div>
-            </CardBody>
-          </Card>
-        </div>
-
-        {/* Supply Chain Risk Section */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-warning-600" />
-              Supply Chain Risk & Market Dynamics
-            </h3>
-          </CardHeader>
-          <CardBody>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="border-l-4 border-l-danger-500 pl-4">
-                <h4 className="font-semibold text-neutral-900 mb-2">Lithium Supply Concentration</h4>
-                <p className="text-2xl font-bold text-danger-600 mb-1">72%</p>
-                <p className="text-sm text-neutral-600 mb-3">Sourced from China/South America</p>
-                <p className="text-xs text-neutral-500">
-                  High geopolitical risk. Internal recovery through DLE reduces dependency.
-                </p>
-              </div>
-
-              <div className="border-l-4 border-l-warning-500 pl-4">
-                <h4 className="font-semibold text-neutral-900 mb-2">Price Trajectory (12-month)</h4>
-                <p className="text-2xl font-bold text-warning-600 mb-1">+18-24%</p>
-                <p className="text-sm text-neutral-600 mb-3">Expected lithium price increase</p>
-                <p className="text-xs text-neutral-500">
-                  Projected growth driven by EV adoption & battery demand expansion.
-                </p>
-              </div>
-
-              <div className="border-l-4 border-l-success-500 pl-4">
-                <h4 className="font-semibold text-neutral-900 mb-2">DLE Market Maturity</h4>
-                <p className="text-2xl font-bold text-success-600 mb-1">2025-2027</p>
-                <p className="text-sm text-neutral-600 mb-3">Commercial scale deployment</p>
-                <p className="text-xs text-neutral-500">
-                  Lilac Solutions, EnergyX, Livent scaling. Optimal recovery window: NOW.
-                </p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Time-Sensitive Assets */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Zap className="w-5 h-5 text-danger-600" />
-              Time-Sensitive DLE Opportunities
-            </h3>
-          </CardHeader>
-          <CardBody>
-            <p className="text-sm text-neutral-600 mb-4">
-              Assets with high lithium content approaching end-of-life. Act within optimal window to maximize recovery value.
-            </p>
-            <div className="space-y-3">
-              {dleAssets.map((asset) => (
-                <div key={asset.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg border border-neutral-200 hover:bg-neutral-100 transition">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-neutral-900">{asset.name}</h4>
-                      {asset.dleSuitable && (
-                        <Badge variant="success" className="text-xs">DLE Suitable</Badge>
-                      )}
-                    </div>
-                    <div className="flex gap-4 text-xs text-neutral-600">
-                      <span>Lithium: {asset.lithiumContent}kg</span>
-                      <span>Current Value: ${asset.currentValue}</span>
-                      <span>2027 Value: ${asset.projectedValue2027}</span>
-                      <span className="text-warning-700 font-semibold">{asset.timeSensitivity}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-primary-600">${asset.projectedValue2027 - asset.currentValue}</p>
-                    <p className="text-xs text-neutral-500">Upside potential</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* DLE Processing Pathways */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">DLE Processing Pathways</h3>
-          </CardHeader>
-          <CardBody>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="border rounded-lg p-4">
-                <h4 className="font-semibold text-neutral-900 mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-primary-600 text-white rounded text-center text-xs font-bold">1</span>
-                  Sorbent-Based DLE
-                </h4>
-                <p className="text-sm text-neutral-600 mb-3">
-                  Direct extraction using engineered sorbent materials that selectively capture lithium ions.
-                </p>
-                <p className="text-xs font-semibold text-primary-600">Technology: Lilac Solutions, EnergyX</p>
-              </div>
-
-              <div className="border rounded-lg p-4">
-                <h4 className="font-semibold text-neutral-900 mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-warning-600 text-white rounded text-center text-xs font-bold">2</span>
-                  Membrane-Based DLE
-                </h4>
-                <p className="text-sm text-neutral-600 mb-3">
-                  Selective membrane separation combined with electrochemical or precipitation methods.
-                </p>
-                <p className="text-xs font-semibold text-warning-600">Technology: Livent, POSCO</p>
-              </div>
-
-              <div className="border rounded-lg p-4">
-                <h4 className="font-semibold text-neutral-900 mb-2 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-success-600 text-white rounded text-center text-xs font-bold">3</span>
-                  Geothermal/Recycled
-                </h4>
-                <p className="text-sm text-neutral-600 mb-3">
-                  DLE processing of geothermal brines, oilfield wastewater, and recycled battery materials.
-                </p>
-                <p className="text-xs font-semibold text-success-600">Reduces primary mining dependence</p>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Financial Impact Model */}
-        <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary-600" />
-              DLE ROI Calculator
-            </h3>
-          </CardHeader>
-          <CardBody>
-            <div className="bg-neutral-50 rounded-lg p-4 space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-primary-600">${dleMetrics.recoverableValue}</p>
-                  <p className="text-xs text-neutral-600">Total Recovery Value (Current)</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-warning-600">+${Math.round(dleMetrics.recoverableValue * 0.22)}</p>
-                  <p className="text-xs text-neutral-600">Projected Gain (22% price increase)</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-success-600">${Math.round(dleMetrics.recoverableValue * 0.85)}</p>
-                  <p className="text-xs text-neutral-600">After DLE Processing Cost</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-danger-600">${Math.round(dleMetrics.recoverableValue * 0.3)}</p>
-                  <p className="text-xs text-neutral-600">vs. Landfill Cost Avoided</p>
-                </div>
-              </div>
-
-              <div className="border-t border-neutral-200 pt-4">
-                <h4 className="font-semibold text-neutral-900 mb-2">Optimal Recovery Window</h4>
-                <div className="bg-white rounded p-3 text-sm text-neutral-600">
-                  <p className="mb-2">
-                    <span className="font-semibold">Recommended Action Timeline:</span>
+                  <h3 className="font-semibold text-primary-900 mb-2">DLE (Direct Lithium Extraction)</h3>
+                  <p className="text-sm text-primary-800 mb-3">
+                    {dleSuitableAssets.length} of your assets are suitable for Direct Lithium Extraction. DLE is a faster, more sustainable alternative to traditional lithium mining, reducing water consumption by 95% and extracting lithium within hours instead of years.
                   </p>
-                  <ul className="space-y-1 text-xs">
-                    <li>✓ <span className="font-semibold text-success-600">Now-6 months:</span> High-urgency assets (8 units identified)</li>
-                    <li>✓ <span className="font-semibold text-warning-600">6-12 months:</span> Standard priority (12 units)</li>
-                    <li>✓ <span className="font-semibold text-neutral-600">12+ months:</span> Lower urgency (3 units)</li>
-                  </ul>
+                  <div className="flex gap-4 text-xs">
+                    <div>
+                      <span className="font-semibold text-primary-900">95%</span>
+                      <p className="text-primary-700">Less water</p>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-primary-900">Hours</span>
+                      <p className="text-primary-700">vs. 2 years</p>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-primary-900">73%</span>
+                      <p className="text-primary-700">Lower CO₂</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </CardBody>
-        </Card>
 
-        {/* Next Steps */}
-        <Card className="bg-gradient-to-r from-primary-50 to-primary-100 border-primary-200">
+            {/* DLE Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardBody>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-neutral-600 mb-2">Recoverable Lithium</p>
+                      <p className="text-3xl font-bold text-success-600">{dleMetrics.totalRecoverableLithium}</p>
+                      <p className="text-xs text-neutral-500 mt-1">kg from {dleMetrics.dleSuitableAssets} assets</p>
+                    </div>
+                    <Battery className="w-8 h-8 text-success-300" />
+                  </div>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardBody>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-neutral-600 mb-2">DLE-Suitable Assets</p>
+                      <p className="text-3xl font-bold text-primary-600">{dleMetrics.dleSuitableAssets}</p>
+                      <p className="text-xs text-neutral-500 mt-1">({dleMetrics.dleCandidatePercentage}% of inventory)</p>
+                    </div>
+                    <CheckCircle className="w-8 h-8 text-primary-300" />
+                  </div>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardBody>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-neutral-600 mb-2">DLE Recovery Value</p>
+                      <p className="text-3xl font-bold text-warning-600">${dleMetrics.totalLithiumValue}</p>
+                      <p className="text-xs text-neutral-500 mt-1">at current rates</p>
+                    </div>
+                    <DollarSign className="w-8 h-8 text-warning-300" />
+                  </div>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardBody>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-neutral-600 mb-2">CO₂e Savings</p>
+                      <p className="text-3xl font-bold text-green-600">{dleMetrics.co2eSavingsVsDLE}</p>
+                      <p className="text-xs text-neutral-500 mt-1">kg vs primary mining</p>
+                    </div>
+                    <Droplet className="w-8 h-8 text-green-300" />
+                  </div>
+                </CardBody>
+              </Card>
+            </div>
+
+            {/* DLE-Suitable Assets List */}
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold">✅ DLE-Suitable Assets in Your Portfolio</h3>
+              </CardHeader>
+              <CardBody>
+                <div className="space-y-2">
+                  {dleSuitableAssets.map(asset => {
+                    const profile = getAssetProfile(asset.assetType)
+                    return (
+                      <div key={asset.assetId} className="p-3 bg-success-50 rounded-lg border border-success-200">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold text-neutral-900">{asset.productName}</p>
+                            <p className="text-xs text-neutral-600">{asset.assetType}</p>
+                          </div>
+                          <Badge variant="success">✅ DLE Ready</Badge>
+                        </div>
+                        {profile && (
+                          <div className="mt-2 text-xs text-neutral-600 space-y-1">
+                            <p>Est. Lithium: {profile.lithiumContent.min}-{profile.lithiumContent.max}kg</p>
+                            <p>Est. Value: ${profile.recoveryValue.min}-${profile.recoveryValue.max}</p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardBody>
+            </Card>
+          </>
+        )}
+
+        {/* NON-DLE RECOVERY STRATEGIES */}
+        {nonDLEAssets.length > 0 && (
+          <>
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold">
+                  🔄 Alternative Recovery Pathways ({nonDLEAssets.length} assets)
+                </h3>
+              </CardHeader>
+              <CardBody>
+                <p className="text-sm text-neutral-600 mb-4">
+                  While not suitable for DLE, these assets have value through other recovery pathways:
+                </p>
+                <div className="space-y-3">
+                  {nonDLEAssets.map(asset => {
+                    const profile = getAssetProfile(asset.assetType)
+                    return (
+                      <div key={asset.assetId} className="p-3 bg-warning-50 rounded-lg border border-warning-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-semibold text-neutral-900">{asset.productName}</p>
+                            <p className="text-xs text-neutral-600">{asset.assetType}</p>
+                          </div>
+                          <Badge variant="warning">{profile?.recoveryPathway || 'UNKNOWN'}</Badge>
+                        </div>
+                        {profile && (
+                          <p className="text-xs text-neutral-600">
+                            💰 Est. Value: ${profile.recoveryValue.min}-${profile.recoveryValue.max} via {profile.recoveryPathway}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardBody>
+            </Card>
+          </>
+        )}
+
+        {/* Supply Chain Risk Section - Only show if DLE assets exist */}
+        {dleSuitableAssets.length > 0 && (
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-warning-600" />
+                Supply Chain Risk & Market Dynamics
+              </h3>
+            </CardHeader>
+            <CardBody>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="border-l-4 border-l-danger-500 pl-4">
+                  <h4 className="font-semibold text-neutral-900 mb-2">Lithium Supply Concentration</h4>
+                  <p className="text-2xl font-bold text-danger-600 mb-1">72%</p>
+                  <p className="text-sm text-neutral-600 mb-3">Sourced from China/South America</p>
+                  <p className="text-xs text-neutral-500">
+                    High geopolitical risk. Internal recovery through DLE reduces dependency.
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-l-warning-500 pl-4">
+                  <h4 className="font-semibold text-neutral-900 mb-2">Price Trajectory (12-month)</h4>
+                  <p className="text-2xl font-bold text-warning-600 mb-1">+18-24%</p>
+                  <p className="text-sm text-neutral-600 mb-3">Expected lithium price increase</p>
+                  <p className="text-xs text-neutral-500">
+                    Projected growth driven by EV adoption & battery demand expansion.
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-l-success-500 pl-4">
+                  <h4 className="font-semibold text-neutral-900 mb-2">DLE Market Maturity</h4>
+                  <p className="text-2xl font-bold text-success-600 mb-1">2025-2027</p>
+                  <p className="text-sm text-neutral-600 mb-3">Commercial scale deployment</p>
+                  <p className="text-xs text-neutral-500">
+                    Lilac Solutions, EnergyX, Livent scaling. Optimal recovery window: NOW.
+                  </p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Summary Card */}
+        <Card className="bg-gradient-to-r from-success-50 to-success-100 border-success-200">
           <CardHeader>
-            <h3 className="text-lg font-semibold text-primary-900">Recommended Next Steps</h3>
+            <h3 className="text-lg font-semibold text-success-900">📊 Total Recovery Value</h3>
           </CardHeader>
-          <CardBody className="space-y-2 text-sm text-primary-900">
-            <p>1. <span className="font-semibold">Audit your assets:</span> Identify high-value lithium content items approaching EOL</p>
-            <p>2. <span className="font-semibold">Partner with DLE provider:</span> Lilac Solutions, EnergyX, or regional partners</p>
-            <p>3. <span className="font-semibold">Quantify supply chain risk:</span> Assess lithium concentration dependency (currently 72% China)</p>
-            <p>4. <span className="font-semibold">Lock in supply:</span> Secure off-take agreements before prices rise 18-24%</p>
-            <p>5. <span className="font-semibold">Track impact:</span> Monitor CO₂e savings and material recovery KPIs quarterly</p>
+          <CardBody>
+            <div className="text-3xl font-bold text-success-600 mb-2">
+              ${(parseInt(dleMetrics.totalLithiumValue) + (nonDLEAssets.length * 50)).toLocaleString()}
+            </div>
+            <p className="text-sm text-success-800">
+              Combined value from DLE ({dleSuitableAssets.length} assets) + Alternative pathways ({nonDLEAssets.length} assets)
+            </p>
           </CardBody>
         </Card>
       </div>
