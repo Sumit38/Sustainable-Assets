@@ -15,6 +15,7 @@ import {
   X,
   Leaf,
   CheckCircle2,
+  Battery,
 } from 'lucide-react'
 
 const navigation = [
@@ -24,6 +25,7 @@ const navigation = [
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Sustainability', href: '/sustainability', icon: Leaf },
+  { name: 'DLE Analytics', href: '/dle', icon: Battery },
   { name: 'Risk Justification', href: '/risk-justification', icon: CheckCircle2 },
   { name: 'Logic Library', href: '/logic-library', icon: FileText },
   { name: 'Score Library', href: '/score-library', icon: BarChart3 },

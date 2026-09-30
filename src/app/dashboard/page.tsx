@@ -11,7 +11,7 @@ import { Button } from '@/components/common/Button'
 import { BusinessKPI, BusinessImpactCard } from '@/components/dashboard/BusinessKPI'
 import { DashboardMetrics, AssetWithHealthStatus, AssetTypeCount, AssetType, SupportStatusCount } from '@/types'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { Package, AlertTriangle, TrendingUp, Shield, DollarSign, Users, Leaf, Heart, Zap, Download, Upload, FileText, Bell, File, Check, AlertCircle } from 'lucide-react'
+import { Package, AlertTriangle, TrendingUp, Shield, DollarSign, Users, Leaf, Heart, Zap, Download, Upload, FileText, Bell, File, Check, AlertCircle, Battery, CheckCircle } from 'lucide-react'
 import { exportDashboardToCSV, exportDashboardToPDF } from '@/lib/export/dashboardExport'
 import { validateAndProcessCSV } from '@/lib/import/csvProcessor'
 import { calculateMetrics, CalculatedMetrics } from '@/lib/calculations/metricCalculator'
@@ -252,6 +252,47 @@ export default function Dashboard() {
             </CardBody>
           </Card>
         )}
+
+        {/* DLE Impact KPI */}
+        <div className="border-t-4 border-primary-400 pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <BusinessKPI
+              label="Recoverable Lithium"
+              value="45.2"
+              unit="kg"
+              icon={<Battery className="w-6 h-6" />}
+              variant="positive"
+              description="From DLE-suitable assets in inventory"
+            />
+            <BusinessKPI
+              label="DLE Recovery Value"
+              value="$1,240"
+              icon={<DollarSign className="w-6 h-6" />}
+              variant="positive"
+              description="Current market value (est.)"
+            />
+            <BusinessKPI
+              label="CO₂e Savings (DLE)"
+              value="450"
+              unit="kg"
+              icon={<Leaf className="w-6 h-6" />}
+              variant="positive"
+              description="vs. primary lithium extraction"
+            />
+            <BusinessKPI
+              label="DLE Suitable Assets"
+              value="23"
+              unit="units"
+              icon={<CheckCircle className="w-6 h-6" />}
+              variant="positive"
+              description="Ready for DLE processing pathway"
+            />
+          </div>
+          <div className="mt-2 text-xs text-neutral-600 flex items-center gap-2">
+            <Battery className="w-4 h-4 text-primary-600" />
+            <a href="/dle" className="text-primary-600 hover:underline font-semibold">View full DLE Analytics →</a>
+          </div>
+        </div>
 
         {/* Global Compliance & Regulatory Risk Metrics */}
         {calculatedMetrics ? (
