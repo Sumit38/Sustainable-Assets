@@ -18,7 +18,7 @@ export function PageHeader({
   description,
   alerts,
   showHomeButton = true,
-  homeHref = '/',
+  homeHref = '/welcome',
   showBackButton = false,
   onBack,
 }: PageHeaderProps) {
