@@ -16,7 +16,7 @@ export default function ScoreLibraryPage() {
         <PageHeader
           title="Score Library"
           description="All calculated metrics and supplementary scores"
-          homeHref="/"
+          homeHref="/welcome"
         />
         <div className="p-6">
           <Card>
@@ -264,7 +264,7 @@ export default function ScoreLibraryPage() {
       <PageHeader
         title="Score Library"
         description="Comprehensive view of all calculated metrics and supplementary scores"
-        homeHref="/"
+        homeHref="/welcome"
       />
 
       <div className="p-6 space-y-6 max-w-6xl">

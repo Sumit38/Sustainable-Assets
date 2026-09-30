@@ -59,7 +59,7 @@ export default function DLEPage() {
         <PageHeader
           title="Asset Recovery Analytics"
           description="Optimize your asset portfolio with DLE and alternative recovery strategies"
-          homeHref="/"
+          homeHref="/welcome"
         />
         <div className="p-6 max-w-6xl">
           <Card className="bg-blue-50 border-blue-200">
@@ -86,7 +86,7 @@ export default function DLEPage() {
         <PageHeader
           title="Asset Recovery Analytics"
           description="Optimize your asset portfolio with alternative recovery strategies"
-          homeHref="/"
+          homeHref="/welcome"
         />
         <div className="p-6 space-y-6 max-w-6xl">
           {/* Alert: No DLE-suitable assets */}
@@ -238,7 +238,7 @@ export default function DLEPage() {
       <PageHeader
         title="Asset Recovery Analytics"
         description="Maximize recovery value with DLE and alternative recovery strategies"
-        homeHref="/"
+        homeHref="/welcome"
       />
 
       <div className="p-6 space-y-6 max-w-6xl">

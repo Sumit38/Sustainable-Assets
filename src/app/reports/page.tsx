@@ -175,7 +175,7 @@ export default function ReportsPage() {
 
   return (
     <div className="w-full">
-      <PageHeader title="Reports & Analytics" description="Comprehensive asset health analytics and trends" homeHref="/" />
+      <PageHeader title="Reports & Analytics" description="Comprehensive asset health analytics and trends" homeHref="/welcome" />
 
       {importedAssets.length === 0 && (
         <div className="p-6">

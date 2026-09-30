@@ -178,7 +178,7 @@ export default function RiskJustificationPage() {
       <PageHeader
         title="Risk Justification & Compliance Q&A"
         description="Document and justify compliance violations with structured answers based on global compliance policies"
-        homeHref="/"
+        homeHref="/welcome"
       />
 
       <div className="p-6 space-y-6">

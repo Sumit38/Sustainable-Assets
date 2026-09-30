@@ -142,7 +142,7 @@ export default function AlertsPage() {
 
   return (
     <div className="w-full">
-      <PageHeader title="Alert Management" description="Monitor and manage system alerts" alerts={pendingCount} homeHref="/" />
+      <PageHeader title="Alert Management" description="Monitor and manage system alerts" alerts={pendingCount} homeHref="/welcome" />
 
       <div className="p-6 space-y-6">
         {/* Quick Stats */}

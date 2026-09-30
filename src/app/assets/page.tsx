@@ -27,7 +27,7 @@ export default function AssetsPage() {
       <PageHeader
         title="Asset Inventory"
         description="View and manage all assets"
-        homeHref="/"
+        homeHref="/welcome"
       />
 
       <div className="p-6 space-y-6">

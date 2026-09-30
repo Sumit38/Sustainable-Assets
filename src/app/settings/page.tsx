@@ -35,7 +35,7 @@ export default function SettingsPage() {
 
   return (
     <div className="w-full">
-      <PageHeader title="Settings" description="Configure application and user preferences" homeHref="/" />
+      <PageHeader title="Settings" description="Configure application and user preferences" homeHref="/welcome" />
 
       <div className="p-6 space-y-6 max-w-4xl">
         {/* Success Message */}

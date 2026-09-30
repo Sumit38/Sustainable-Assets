@@ -139,7 +139,7 @@ Downtime Cost = Hours Per Failure × Cost Per Hour × Failure Probability`,
       <PageHeader
         title="Logic Library"
         description="Transparent documentation of all calculation formulas and metrics"
-        homeHref="/"
+        homeHref="/welcome"
       />
 
       <div className="p-6 space-y-4 max-w-6xl">

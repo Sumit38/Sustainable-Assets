@@ -187,7 +187,7 @@ export default function SustainabilityPage() {
         title="Sustainability & Health Impact"
         description="Environmental emissions and organizational health risk dashboard"
         alerts={MOCK_SUSTAINABILITY_DATA.alerts.filter((a) => a.severity !== 'info').length}
-        homeHref="/"
+        homeHref="/welcome"
       />
 
       {importedAssets.length === 0 && (
