@@ -16,6 +16,8 @@ import {
   Users,
   Leaf,
   Clock,
+  Battery,
+  Droplet,
 } from 'lucide-react'
 
 export default function LandingPage() {
@@ -295,6 +297,136 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* DLE Section */}
+      <section className="py-20 bg-gradient-to-br from-primary-50 to-primary-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="flex items-center gap-3 mb-6">
+                <Battery className="w-10 h-10 text-primary-600" />
+                <span className="text-primary-600 font-semibold text-lg">Direct Lithium Extraction</span>
+              </div>
+              <h2 className="text-4xl font-bold mb-6 text-neutral-900">
+                Recover Critical Materials. Maximize Recovery Value.
+              </h2>
+              <p className="text-lg text-neutral-700 mb-6">
+                When assets reach end-of-life, they contain valuable materials—lithium, cobalt, nickel, and rare earth elements—worth recovering. Direct Lithium Extraction (DLE) is a faster, cleaner alternative to traditional mining that extracts lithium from assets in hours instead of months.
+              </p>
+
+              <div className="space-y-4 mb-8">
+                <div className="flex gap-4">
+                  <Droplet className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-1">95% Less Water</h4>
+                    <p className="text-sm text-neutral-600">DLE reduces water consumption vs. traditional lithium mining</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <CheckCircle className="w-6 h-6 text-success-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-1">73% Lower Carbon</h4>
+                    <p className="text-sm text-neutral-600">Reduces embodied carbon vs. primary lithium mining</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <Clock className="w-6 h-6 text-warning-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-1">Hours vs. 2 Years</h4>
+                    <p className="text-sm text-neutral-600">Extract lithium in hours instead of waiting months/years</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <DollarSign className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-1">Recover Value</h4>
+                    <p className="text-sm text-neutral-600">Lock in pricing before material costs rise 18-24% in 12 months</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg p-6 border-l-4 border-l-primary-600 mb-8">
+                <h4 className="font-semibold text-neutral-900 mb-3">Why This Matters for Your Organization</h4>
+                <ul className="space-y-2 text-sm text-neutral-600">
+                  <li className="flex gap-2">
+                    <span className="text-primary-600 font-bold">•</span>
+                    <span>Supply chain concentration: 72% of lithium from China/South America</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary-600 font-bold">•</span>
+                    <span>Price risk: Lithium prices projected to rise 18-24% in 12 months</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary-600 font-bold">•</span>
+                    <span>Asset aging: Many organizations don't know lithium content in aging hardware</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-primary-600 font-bold">•</span>
+                    <span>Sustainability: Replacing primary mining reduces Scope 3 emissions</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link href="/auth/signup">
+                <Button variant="primary" size="lg" className="w-full md:w-auto">
+                  Explore DLE Analytics
+                </Button>
+              </Link>
+            </div>
+
+            <div className="space-y-6">
+              <Card className="bg-gradient-to-br from-success-50 to-success-100 border-success-200">
+                <CardBody>
+                  <div className="text-4xl font-bold text-success-600 mb-2">45.2 kg</div>
+                  <p className="text-sm font-semibold text-neutral-700 mb-1">Recoverable Lithium</p>
+                  <p className="text-xs text-neutral-600">From typical 1,000-asset portfolio</p>
+                </CardBody>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-warning-50 to-warning-100 border-warning-200">
+                <CardBody>
+                  <div className="text-4xl font-bold text-warning-600 mb-2">$1,240</div>
+                  <p className="text-sm font-semibold text-neutral-700 mb-1">Current Recovery Value</p>
+                  <p className="text-xs text-neutral-600">At current market rates</p>
+                </CardBody>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200">
+                <CardBody>
+                  <div className="text-4xl font-bold text-primary-600 mb-2">+$297</div>
+                  <p className="text-sm font-semibold text-neutral-700 mb-1">Projected Upside (22%)</p>
+                  <p className="text-xs text-neutral-600">In 12-month window</p>
+                </CardBody>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                <CardBody>
+                  <div className="text-4xl font-bold text-green-600 mb-2">450 kg</div>
+                  <p className="text-sm font-semibold text-neutral-700 mb-1">CO₂e Savings</p>
+                  <p className="text-xs text-neutral-600">vs. primary mining</p>
+                </CardBody>
+              </Card>
+
+              <div className="bg-white rounded-lg p-6 border border-neutral-200">
+                <h4 className="font-semibold text-neutral-900 mb-3">Asset Health System Advantage</h4>
+                <p className="text-sm text-neutral-600 mb-3">
+                  Our platform automatically identifies which assets contain lithium and other critical materials, assesses their condition, and determines optimal recovery timing.
+                </p>
+                <ul className="space-y-2 text-xs text-neutral-600">
+                  <li>✓ Material composition tracking</li>
+                  <li>✓ EOL pathway recommendations</li>
+                  <li>✓ Recovery value projections</li>
+                  <li>✓ Environmental impact quantification</li>
+                  <li>✓ Supply chain risk assessment</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </section>
