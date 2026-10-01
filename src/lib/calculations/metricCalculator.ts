@@ -12,7 +12,6 @@ import {
   getCarbonFactor,
   calculateMethaneCO2e,
 } from '@/lib/data/impactFactors'
-import { calculateFactorsWithConfidence, DataSource } from './factorCalculator'
 
 export interface ImportedAsset {
   assetId: string
@@ -223,15 +222,11 @@ function calculateHealthImpact(assets: ImportedAsset[]) {
 
   for (const asset of assets) {
     if (asset.healthStatus !== 'healthy') {
-      // Use smart fallback system: template data > Q&A answers > industry standard
-      const factorResult = calculateFactorsWithConfidence(
-        asset.assetType,
-        {
-          employeesAffected: asset.employeesAffected,
-          healthIssuesPerYear: asset.healthIssuesPerYear,
-        },
-        asset.questionnaireAnswers
-      )
+      // Only use provided data - no fallback or estimates
+      // If required data missing, skip this asset
+      if (asset.employeesAffected === undefined || asset.healthIssuesPerYear === undefined) {
+        continue
+      }
 
       const riskMultiplier = {
         'at-risk': 1.5,
@@ -240,19 +235,8 @@ function calculateHealthImpact(assets: ImportedAsset[]) {
         'healthy': 0,
       }[asset.healthStatus]
 
-      totalEmployeesAtRisk += factorResult.healthFactor.value * riskMultiplier
-      totalHealthIssuesPredicted += (asset.healthIssuesPerYear || 0) * riskMultiplier
-
-      // Track data source for transparency
-      if (!asset.factorDataSources) {
-        asset.factorDataSources = {
-          health: factorResult.healthFactor.source,
-          cost: 'estimated',
-          carbon: 'estimated',
-        }
-      } else {
-        asset.factorDataSources.health = factorResult.healthFactor.source
-      }
+      totalEmployeesAtRisk += asset.employeesAffected * riskMultiplier
+      totalHealthIssuesPredicted += asset.healthIssuesPerYear * riskMultiplier
     }
   }
 
