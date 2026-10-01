@@ -18,6 +18,16 @@ export interface ExtendedImportedAsset extends ImportedAsset {
   productParts?: string
   potentialHealthImpact?: string
   riskLevel?: string
+  // Impact factor fields (optional - can be filled in template or answered via Q&A)
+  employeesAffected?: number
+  healthIssuesPerYear?: number
+  annualMaintenanceCost?: number
+  downtimeHoursPerFailure?: number
+  downtimeCostPerHour?: number
+  replacementCost?: number
+  annualCO2e?: number
+  powerWatts?: number
+  notes?: string
 }
 
 export interface CSVProcessingResult {
@@ -160,6 +170,17 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
       const potentialHealthImpact = row[headerMap['Potential Health Impact']]?.trim()
       const riskLevel = row[headerMap['Risk Level']]?.trim()
 
+      // Extract impact factor fields (optional)
+      const employeesAffectedStr = row[headerMap['Employees Affected']]?.trim()
+      const healthIssuesPerYearStr = row[headerMap['Health Issues Per Year']]?.trim()
+      const annualMaintenanceCostStr = row[headerMap['Annual Maintenance Cost']]?.trim()
+      const downtimeHoursStr = row[headerMap['Downtime Hours Per Failure']]?.trim()
+      const downtimeCostPerHourStr = row[headerMap['Downtime Cost Per Hour']]?.trim()
+      const replacementCostStr = row[headerMap['Replacement Cost']]?.trim()
+      const annualCO2eStr = row[headerMap['Annual CO2e']]?.trim()
+      const powerWattsStr = row[headerMap['Power Watts']]?.trim()
+      const notes = row[headerMap['Notes']]?.trim()
+
       // Validate required fields
       if (!assetId) {
         errors.push({
@@ -270,6 +291,16 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
         continue
       }
 
+      // Parse impact factor fields (optional numeric values)
+      const employeesAffected = employeesAffectedStr ? parseFloat(employeesAffectedStr) : undefined
+      const healthIssuesPerYear = healthIssuesPerYearStr ? parseFloat(healthIssuesPerYearStr) : undefined
+      const annualMaintenanceCost = annualMaintenanceCostStr ? parseFloat(annualMaintenanceCostStr) : undefined
+      const downtimeHoursPerFailure = downtimeHoursStr ? parseFloat(downtimeHoursStr) : undefined
+      const downtimeCostPerHour = downtimeCostPerHourStr ? parseFloat(downtimeCostPerHourStr) : undefined
+      const replacementCost = replacementCostStr ? parseFloat(replacementCostStr) : undefined
+      const annualCO2e = annualCO2eStr ? parseFloat(annualCO2eStr) : undefined
+      const powerWatts = powerWattsStr ? parseFloat(powerWattsStr) : undefined
+
       // Build asset object with optional fields
       const asset: ExtendedImportedAsset = {
         assetId,
@@ -287,13 +318,23 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
         location,
         cost,
         purchaseDate: purchaseDate || new Date().toISOString().split('T')[0],
-        // Optional fields
+        // Optional fields - Asset information
         ...(barcode && { barcode }),
         ...(endOfSale && { endOfSale }),
         ...(replacementProduct && { replacementProduct }),
         ...(productParts && { productParts }),
         ...(potentialHealthImpact && { potentialHealthImpact }),
         ...(riskLevel && { riskLevel }),
+        // Impact factor fields (optional)
+        ...(employeesAffected && !isNaN(employeesAffected) && { employeesAffected }),
+        ...(healthIssuesPerYear !== undefined && !isNaN(healthIssuesPerYear) && { healthIssuesPerYear }),
+        ...(annualMaintenanceCost && !isNaN(annualMaintenanceCost) && { annualMaintenanceCost }),
+        ...(downtimeHoursPerFailure && !isNaN(downtimeHoursPerFailure) && { downtimeHoursPerFailure }),
+        ...(downtimeCostPerHour && !isNaN(downtimeCostPerHour) && { downtimeCostPerHour }),
+        ...(replacementCost && !isNaN(replacementCost) && { replacementCost }),
+        ...(annualCO2e && !isNaN(annualCO2e) && { annualCO2e }),
+        ...(powerWatts && !isNaN(powerWatts) && { powerWatts }),
+        ...(notes && { notes }),
       }
 
       assets.push(asset)
