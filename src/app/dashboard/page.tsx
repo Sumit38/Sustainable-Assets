@@ -235,7 +235,7 @@ export default function Dashboard() {
               }
               description="Comprehensive environmental & compliance score"
               zeroNote="No replaceable asset found - Organization shows lack of awareness for asset lifecycle management"
-              calculation="Composite environmental impact score. Calculated as: (Weighted CO₂e emissions + waste impact + compliance violations) / (Total assets × baseline factor). Range 0-100, where higher values = greater environmental impact."
+              calculation="GPI = Average of [(Actual Scope 2 / Replaceable Scope 2) + (Actual Scope 3 / Replaceable Scope 3) + (Actual Energy / Replaceable Energy)] × (Number of Replaceable Assets / Total Assets). Range 0-100, where higher values indicate greater environmental/compliance impact. Scope 2 = indirect emissions (electricity, heating). Scope 3 = other indirect emissions (supplier, customer activities)."
             />
             <BusinessKPI
               label="Business Continuity Risk"
