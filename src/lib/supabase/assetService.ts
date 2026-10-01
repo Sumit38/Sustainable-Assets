@@ -48,6 +48,14 @@ export async function saveAssetsToDatabase(
           location: asset.location,
           cost: asset.cost,
           purchase_date: asset.purchaseDate,
+          employees_affected: asset.employeesAffected,
+          health_issues_per_year: asset.healthIssuesPerYear,
+          annual_maintenance_cost: asset.annualMaintenanceCost,
+          downtime_hours_per_failure: asset.downtimeHoursPerFailure,
+          downtime_cost_per_hour: asset.downtimeCostPerHour,
+          replacement_cost: asset.replacementCost,
+          annual_co2e: asset.annualCO2e,
+          power_watts: asset.powerWatts,
           created_at: new Date().toISOString(),
         }))
       )
@@ -107,6 +115,14 @@ export async function loadAssetsFromDatabase(
       location: row.location,
       cost: row.cost,
       purchaseDate: row.purchase_date,
+      employeesAffected: row.employees_affected,
+      healthIssuesPerYear: row.health_issues_per_year,
+      annualMaintenanceCost: row.annual_maintenance_cost,
+      downtimeHoursPerFailure: row.downtime_hours_per_failure,
+      downtimeCostPerHour: row.downtime_cost_per_hour,
+      replacementCost: row.replacement_cost,
+      annualCO2e: row.annual_co2e,
+      powerWatts: row.power_watts,
     }))
   } catch (err) {
     console.warn('Failed to load assets from database:', err)
