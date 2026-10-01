@@ -14,7 +14,7 @@ export default function WelcomePage() {
         <div className="text-center mb-16">
           <div className="flex items-center justify-center gap-3 mb-6">
             <BarChart3 className="w-12 h-12 text-primary-600" />
-            <h1 className="text-5xl font-bold text-neutral-900">Asset Health System</h1>
+            <h1 className="text-5xl font-bold text-neutral-900">AssetPulse</h1>
           </div>
           <p className="text-xl text-neutral-600">
             Professional monitoring for your organization's asset portfolio
@@ -239,7 +239,7 @@ export default function WelcomePage() {
         {/* Footer */}
         <div className="text-center mt-12 text-neutral-600 text-sm">
           <p>
-            Asset Health System v1.0.0 • Professional Asset Monitoring & Alert Management
+            AssetPulse v1.0.0 • Professional Asset Monitoring & Alert Management
           </p>
         </div>
       </div>

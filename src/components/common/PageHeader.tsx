@@ -42,7 +42,7 @@ export function PageHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          {alerts && alerts > 0 && (
+          {!!alerts && alerts > 0 && (
             <div className="flex items-center gap-2 px-4 py-2 bg-danger-50 border border-danger-200 rounded-lg">
               <AlertCircle className="w-5 h-5 text-danger-600" />
               <span className="text-sm font-medium text-danger-700">{alerts} Active Alerts</span>

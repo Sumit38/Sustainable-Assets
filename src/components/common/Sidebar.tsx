@@ -91,7 +91,7 @@ export function Sidebar() {
             <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg">Asset Health System</span>
+            <span className="font-bold text-lg">AssetPulse</span>
           </div>
         </div>
 

@@ -27,7 +27,7 @@ export default function LandingPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <BarChart3 className="w-8 h-8 text-primary-600" />
-              <span className="text-xl font-bold text-neutral-900">Asset Health System</span>
+              <span className="text-xl font-bold text-neutral-900">AssetPulse</span>
             </div>
             <div className="flex gap-4">
               <Link href="/auth/signin">
@@ -332,7 +332,7 @@ export default function LandingPage() {
           <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-12 text-center border-2 border-primary-200">
             <h2 className="text-4xl font-bold mb-4 text-neutral-900">Ready to Transform Your Operations?</h2>
             <p className="text-lg text-neutral-600 mb-8">
-              Join 200+ organizations using Asset Health System to save millions and improve employee wellness.
+              Join 200+ organizations using AssetPulse to save millions and improve employee wellness.
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
               <Link href="/auth/signup">
@@ -357,7 +357,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-6 h-6 text-primary-400" />
-                <span className="font-bold text-white">Asset Health System</span>
+                <span className="font-bold text-white">AssetPulse</span>
               </div>
               <p className="text-sm text-neutral-400">
                 Professional asset health monitoring and sustainability tracking.
@@ -420,7 +420,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-neutral-800 pt-8 text-center text-sm text-neutral-400">
-            <p>&copy; 2026 Asset Health System. All rights reserved.</p>
+            <p>&copy; 2026 AssetPulse. All rights reserved.</p>
           </div>
         </div>
       </footer>
