@@ -210,29 +210,20 @@ function calculateHealthImpact(assets: ImportedAsset[]) {
   let totalEmployeesAtRisk = 0
   let totalHealthIssuesPredicted = 0
 
+  let totalEmployees = 0
+
+  // Uses the file's own numbers only; assets without the column are skipped, not estimated
   for (const asset of assets) {
-    if (asset.healthStatus !== 'healthy') {
-      // Only use provided data - no fallback or estimates
-      // If required data missing, skip this asset
-      if (asset.employeesAffected === undefined || asset.healthIssuesPerYear === undefined) {
-        continue
-      }
-
-      const riskMultiplier = {
-        'at-risk': 1.5,
-        'critical': 2.5,
-        'end-of-life': 4.0,
-        'healthy': 0,
-      }[asset.healthStatus]
-
-      totalEmployeesAtRisk += asset.employeesAffected * riskMultiplier
-      totalHealthIssuesPredicted += asset.healthIssuesPerYear * riskMultiplier
-    }
+    if (typeof asset.employeesAffected === 'number') totalEmployees += asset.employeesAffected
+    if (asset.healthStatus === 'healthy') continue
+    if (typeof asset.employeesAffected === 'number') totalEmployeesAtRisk += asset.employeesAffected
+    if (typeof asset.healthIssuesPerYear === 'number') totalHealthIssuesPredicted += asset.healthIssuesPerYear
   }
 
   return {
     employeesAtRisk: Math.round(totalEmployeesAtRisk),
     healthIssuesPredicted: Math.round(totalHealthIssuesPredicted),
+    totalEmployees,
   }
 }
 
@@ -431,7 +422,7 @@ function calculateROI(assets: ImportedAsset[], costMetrics: any) {
   const year1Savings = costMetrics.potentialAnnualSavings
   const investmentRequired = costMetrics.investmentRequired
   const paybackMonths =
-    investmentRequired > 0
+    investmentRequired > 0 && year1Savings > 0
       ? Math.round((investmentRequired / year1Savings) * 12)
       : 0
 
@@ -493,7 +484,7 @@ function calculateSupplementaryMetrics(
   const avgHealth =
     assets.reduce((sum, a) => sum + healthScores[a.healthStatus], 0) / assets.length
 
-  const healthRiskPct = (healthMetrics.employeesAtRisk / Math.max(1, assets.length)) * 100
+  const healthRiskPct = healthMetrics.totalEmployees > 0 ? (healthMetrics.employeesAtRisk / healthMetrics.totalEmployees) * 100 : 0
 
   // Calculate indices as ratios of actual to replaceable (0-100 scale)
   // Replaceable baseline: typical replacement values for office assets

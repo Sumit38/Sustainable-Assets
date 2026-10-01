@@ -111,3 +111,19 @@ body {
     @apply text-neutral-200;
   }
 }
+
+@media print {
+  body > div aside,
+  body > div > div > div.fixed,
+  .sticky {
+    display: none !important;
+  }
+  main {
+    margin-left: 0 !important;
+    overflow: visible !important;
+  }
+  section,
+  .recharts-wrapper {
+    break-inside: avoid;
+  }
+}

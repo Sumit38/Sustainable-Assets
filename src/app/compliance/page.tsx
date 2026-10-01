@@ -1,11 +1,10 @@
 'use client'
 
-import React, { ReactNode, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts'
 import { PageHeader } from '@/components/common/PageHeader'
-import { InfoTip } from '@/components/common/InfoTip'
+import { Kpi, NoData, Panel } from '@/components/common/ui'
 import { FilterBar } from '@/components/dashboard/FilterBar'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { ComplianceStandard, Region, getApplicableStandards } from '@/lib/data/complianceMatrix'
@@ -34,31 +33,6 @@ const SCORE_BUCKETS = [
 ]
 
 const shortRegion = (r: string) => r.split(' (')[0]
-
-function Kpi({ label, value, sub, info, tone }: { label: string; value: string; sub: string; info: ReactNode; tone: string }) {
-  return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium text-neutral-600">{label}</p>
-        <InfoTip title={label}>{info}</InfoTip>
-      </div>
-      <p className={`text-2xl font-bold mt-1 ${tone}`}>{value}</p>
-      <p className="text-xs text-neutral-500 mt-1">{sub}</p>
-    </div>
-  )
-}
-
-function Panel({ title, info, children }: { title: string; info: ReactNode; children: ReactNode }) {
-  return (
-    <section className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold text-neutral-900">{title}</h2>
-        <InfoTip title={title}>{info}</InfoTip>
-      </div>
-      {children}
-    </section>
-  )
-}
 
 export default function CompliancePage() {
   const router = useRouter()
@@ -121,13 +95,7 @@ export default function CompliancePage() {
       <div className="w-full">
         <PageHeader title="Compliance" homeHref="/welcome" showBackButton onBack={back} />
         <div className="p-6">
-          <div className="bg-white border border-neutral-200 rounded-xl p-10 text-center">
-            <p className="text-neutral-700 font-medium">No asset data yet</p>
-            <p className="text-sm text-neutral-500 mt-1">Upload your asset list on the dashboard to see compliance details.</p>
-            <Link href="/dashboard" className="inline-block mt-4 text-sm font-medium text-primary-600 hover:underline">
-              Go to Dashboard →
-            </Link>
-          </div>
+          <NoData what="compliance details" />
         </div>
       </div>
     )

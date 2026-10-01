@@ -27,7 +27,7 @@ export function FilterBar({ filters, onChange, options, shown, total }: FilterBa
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <p className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
           <Filter className="w-4 h-4 text-primary-600" />
-          Filter the whole dashboard
+          Filter this page
         </p>
         <div className="flex items-center gap-3 text-xs text-neutral-500">
           <span>

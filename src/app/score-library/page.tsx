@@ -1,385 +1,325 @@
 'use client'
 
-import React from 'react'
+import React, { ReactNode, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { ShieldAlert, HeartPulse, Leaf, BatteryCharging, RefreshCcw, Wallet } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
-import { Card, CardBody, CardHeader } from '@/components/common/Card'
-import { Badge } from '@/components/common/Badge'
+import { InfoTip } from '@/components/common/InfoTip'
+import { FilterBar } from '@/components/dashboard/FilterBar'
+import { NoData } from '@/components/common/ui'
 import { useDashboard } from '@/lib/context/dashboardContext'
-import { AlertCircle, TrendingUp, TrendingDown, Leaf, Users, Shield, Zap } from 'lucide-react'
+import { calculateMetrics } from '@/lib/calculations/metricCalculator'
+import {
+  COMPLIANCE_THRESHOLD,
+  DashboardFilters,
+  EMPTY_FILTERS,
+  computeInsights,
+  filterAssets,
+  filterOptions,
+  filtersFromQuery,
+  formatMoney,
+  formatNumber,
+} from '@/lib/calculations/dashboardInsights'
+
+type Tone = 'good' | 'warn' | 'bad' | 'neutral'
+const TONE: Record<Tone, string> = {
+  good: 'text-success-600',
+  warn: 'text-warning-600',
+  bad: 'text-danger-600',
+  neutral: 'text-neutral-900',
+}
+
+interface Score {
+  name: string
+  value: string
+  unit?: string
+  tone?: Tone
+  info: ReactNode
+  logic: string
+  missing?: string
+}
+
+interface Group {
+  title: string
+  icon: ReactNode
+  accent: string
+  scores: Score[]
+}
+
+const band = (v: number, warn: number, bad: number): Tone => (v >= bad ? 'bad' : v >= warn ? 'warn' : 'good')
+
+function ScoreTile({ s }: { s: Score }) {
+  return (
+    <div className="flex flex-col rounded-lg border border-neutral-200 p-4 hover:border-neutral-300 transition-colors">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-neutral-700">{s.name}</p>
+        <InfoTip title={s.name}>{s.info}</InfoTip>
+      </div>
+      {s.missing ? (
+        <p className="text-sm text-neutral-500 mt-2 flex-1">
+          <span className="block text-2xl font-bold text-neutral-300">—</span>
+          {s.missing}
+        </p>
+      ) : (
+        <p className={`text-2xl font-bold mt-1 flex-1 ${TONE[s.tone ?? 'neutral']}`}>
+          {s.value}
+          {s.unit && <span className="text-sm font-medium text-neutral-500 ml-1">{s.unit}</span>}
+        </p>
+      )}
+      <Link href={`/logic-library#${s.logic}`} className="text-xs font-medium text-primary-600 hover:underline mt-3">
+        How it&apos;s calculated →
+      </Link>
+    </div>
+  )
+}
 
 export default function ScoreLibraryPage() {
-  const { importedAssets, calculatedMetrics } = useDashboard()
+  const { importedAssets } = useDashboard()
+  const [filters, setFilters] = useState<DashboardFilters>(EMPTY_FILTERS)
+  useEffect(() => setFilters(filtersFromQuery(window.location.search)), [])
 
-  if (!calculatedMetrics) {
+  const options = useMemo(() => filterOptions(importedAssets), [importedAssets])
+  const assets = useMemo(() => filterAssets(importedAssets, filters), [importedAssets, filters])
+  const m = useMemo(() => calculateMetrics(assets), [assets])
+  const ins = useMemo(() => computeInsights(assets, filters.standard), [assets, filters.standard])
+
+  if (importedAssets.length === 0) {
     return (
       <div className="w-full">
-        <PageHeader
-          title="Score Library"
-          description="All calculated metrics and supplementary scores"
-          homeHref="/welcome"
-        />
+        <PageHeader title="Score Library" description="Every AssetPulse score in one place" homeHref="/welcome" />
         <div className="p-6">
-          <Card>
-            <CardBody className="flex flex-col items-center justify-center py-12">
-              <AlertCircle className="w-12 h-12 text-neutral-300 mb-4" />
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Data Available</h3>
-              <p className="text-sm text-neutral-600 mb-6">
-                Import asset data from the Dashboard to see all calculated scores
-              </p>
-            </CardBody>
-          </Card>
+          <NoData what="your scores" />
         </div>
       </div>
     )
   }
 
-  const scores = [
+  const has = (pick: (a: (typeof assets)[number]) => unknown) => assets.some(a => typeof pick(a) === 'number')
+  const hasEmployees = has(a => a.employeesAffected)
+  const hasCo2 = has(a => a.annualCO2e)
+  const hasMaint = has(a => a.annualMaintenanceCost)
+  const hasReplacement = has(a => a.replacementCost)
+
+  const groups: Group[] = [
     {
-      category: 'Environmental Impact',
-      icon: <Leaf className="w-6 h-6" />,
-      color: 'text-green-600',
-      metrics: [
+      title: 'Compliance risk',
+      icon: <ShieldAlert className="w-5 h-5" />,
+      accent: 'bg-danger-50 text-danger-600',
+      scores: [
+        {
+          name: 'Non-compliant assets',
+          value: formatNumber(m.assetsViolatingStandards),
+          unit: 'assets',
+          tone: m.assetsViolatingStandards > 0 ? 'bad' : 'good',
+          info: `Assets with a Compliance Score below ${COMPLIANCE_THRESHOLD}. Same figure as the dashboard's Compliance risk card.`,
+          logic: 'compliance',
+        },
+        {
+          name: 'Violation rate',
+          value: `${m.globalComplianceViolationRate}`,
+          unit: '%',
+          tone: band(m.globalComplianceViolationRate, 10, 25),
+          info: 'Non-compliant assets as a share of all assets in this selection.',
+          logic: 'compliance',
+        },
+        {
+          name: 'Potential fines',
+          value: formatMoney(m.potentialFineExposure),
+          tone: m.potentialFineExposure > 0 ? 'bad' : 'good',
+          info: 'Each non-compliant asset × the published fine per violation of every regulation that applies to its type and region.',
+          logic: 'fines',
+        },
+        {
+          name: 'Past end of support',
+          value: formatNumber(ins.compliance.pastEolCount),
+          unit: 'assets',
+          tone: ins.compliance.pastEolCount > 0 ? 'bad' : 'good',
+          info: 'Assets still in use after their Last Date of Support.',
+          logic: 'needs-action',
+        },
+      ],
+    },
+    {
+      title: 'Employee health',
+      icon: <HeartPulse className="w-5 h-5" />,
+      accent: 'bg-warning-50 text-warning-600',
+      scores: [
+        {
+          name: 'Employees exposed',
+          value: formatNumber(m.employeesAtHealthRisk),
+          unit: 'employees',
+          tone: m.employeesAtHealthRisk > 0 ? 'warn' : 'good',
+          info: 'Total of the Employees Affected column for assets that are at risk, critical or past end of life.',
+          logic: 'health',
+          missing: hasEmployees ? undefined : 'Add the “Employees Affected” column to see this.',
+        },
+        {
+          name: 'Share of employees exposed',
+          value: `${m.healthRiskPercentage}`,
+          unit: '%',
+          tone: band(m.healthRiskPercentage, 20, 40),
+          info: 'Employees exposed ÷ all employees listed in the Employees Affected column.',
+          logic: 'health',
+          missing: hasEmployees ? undefined : 'Add the “Employees Affected” column to see this.',
+        },
+        {
+          name: 'Average asset health',
+          value: `${m.averageAssetHealth}`,
+          unit: '/ 100',
+          tone: m.averageAssetHealth >= 75 ? 'good' : m.averageAssetHealth >= 50 ? 'warn' : 'bad',
+          info: 'Healthy = 100, at risk = 50, critical = 25, past end of life = 0, averaged across assets.',
+          logic: 'avg-health',
+        },
+      ],
+    },
+    {
+      title: 'Sustainability',
+      icon: <Leaf className="w-5 h-5" />,
+      accent: 'bg-success-50 text-success-600',
+      scores: [
+        {
+          name: 'Carbon footprint',
+          value: m.carbonFootprintTonnes.toFixed(1),
+          unit: 't CO₂e / yr',
+          info: 'Annual CO2e of all assets with that column, plus estimated landfill methane for retiring assets.',
+          logic: 'carbon',
+          missing: hasCo2 ? undefined : 'Add the “Annual CO2e” column to see this.',
+        },
+        {
+          name: 'From assets due for replacement',
+          value: ins.sustainability.co2eTonnes.total.toFixed(1),
+          unit: 't CO₂e / yr',
+          info: "Annual CO2e of critical and past-end-of-life assets only. Same figure as the dashboard's Sustainability card.",
+          logic: 'carbon',
+          missing: hasCo2 ? undefined : 'Add the “Annual CO2e” column to see this.',
+        },
         {
           name: 'Global Pollution Index',
-          value: calculatedMetrics.globalPollutionIndex,
-          unit: '/100',
-          range: { min: 0, max: 100 },
-          description: 'Comprehensive environmental & compliance score',
-          interpretation: calculatedMetrics.globalPollutionIndex === 0
-            ? 'Check Console'
-            : calculatedMetrics.globalPollutionIndex > 70
-            ? 'Critical'
-            : calculatedMetrics.globalPollutionIndex > 40
-            ? 'Moderate'
-            : 'Good',
-          note: calculatedMetrics.globalPollutionIndex === 0
-            ? 'No replaceable asset found - Organization shows lack of awareness for asset lifecycle management. Import assets with end-of-life dates to calculate GPI.'
-            : undefined,
-        },
-        {
-          name: 'Scope 2 Emission Index',
-          value: calculatedMetrics.scope2EmissionIndex,
-          unit: '/100',
-          range: { min: 0, max: 100 },
-          description: 'Indirect emissions from electricity & energy',
-          interpretation: undefined,
-          note: undefined,
-        },
-        {
-          name: 'Scope 3 Emission Index',
-          value: calculatedMetrics.scope3EmissionIndex,
-          unit: '/100',
-          range: { min: 0, max: 100 },
-          description: 'Other indirect emissions (suppliers, waste)',
-          interpretation: undefined,
-          note: undefined,
-        },
-        {
-          name: 'Energy Efficiency Index',
-          value: calculatedMetrics.energyEfficiencyIndex,
-          unit: '/100',
-          range: { min: 0, max: 100 },
-          description: 'Normalized energy consumption rating',
-          interpretation: undefined,
-          note: undefined,
-        },
-        {
-          name: 'Carbon Footprint',
-          value: calculatedMetrics.carbonFootprintTonnes,
-          unit: 'tonnes CO₂e',
-          range: { min: 0, max: null },
-          description: 'Annual emissions from all scopes + methane',
-          interpretation: undefined,
-          note: undefined,
+          value: `${m.globalPollutionIndex}`,
+          unit: '/ 100',
+          tone: band(m.globalPollutionIndex, 40, 70),
+          info: 'Combines emission and energy ratios with the share of assets due for replacement. Higher is worse. Uses an estimated Scope 2/3 split.',
+          logic: 'gpi',
+          missing: hasCo2 ? undefined : 'Add the “Annual CO2e” column to see this.',
         },
       ],
     },
     {
-      category: 'Organizational Health',
-      icon: <Users className="w-6 h-6" />,
-      color: 'text-blue-600',
-      metrics: [
+      title: 'Lithium recovery',
+      icon: <BatteryCharging className="w-5 h-5" />,
+      accent: 'bg-primary-50 text-primary-600',
+      scores: [
         {
-          name: 'Average Asset Health',
-          value: calculatedMetrics.averageAssetHealth,
-          unit: '%',
-          range: { min: 0, max: 100 },
-          description: 'Overall health status of asset portfolio (0=Poor, 100=Excellent)',
-          interpretation: undefined,
-          note: undefined,
+          name: 'Recoverable now',
+          value: ins.lithium.lithiumKg.toFixed(2),
+          unit: 'kg lithium',
+          info: 'Lithium in retiring battery devices (laptops, tablets, phones, UPS, EVs), from typical content per device type.',
+          logic: 'lithium',
         },
         {
-          name: 'Health Risk Percentage',
-          value: calculatedMetrics.healthRiskPercentage,
-          unit: '%',
-          range: { min: 0, max: 100 },
-          description: 'Percentage of employees at health risk from aged assets',
-          interpretation: undefined,
-          note: undefined,
+          name: 'Retiring battery devices',
+          value: formatNumber(ins.lithium.lithiumAssets),
+          unit: 'devices',
+          info: 'Battery devices that are critical or past end of life.',
+          logic: 'lithium',
         },
         {
-          name: 'Employees at Health Risk',
-          value: calculatedMetrics.employeesAtHealthRisk,
-          unit: 'people',
-          range: { min: 0, max: null },
-          description: 'Estimated count of employees exposed to health hazards',
-          interpretation: undefined,
-          note: undefined,
+          name: 'Mining CO₂e avoided',
+          value: formatNumber(ins.lithium.miningCo2eAvoidedKg),
+          unit: 'kg',
+          tone: 'good',
+          info: 'CO2e saved by recovering lithium from these devices instead of mining it.',
+          logic: 'lithium',
         },
       ],
     },
     {
-      category: 'Asset Management',
-      icon: <TrendingUp className="w-6 h-6" />,
-      color: 'text-orange-600',
-      metrics: [
+      title: 'Asset lifecycle',
+      icon: <RefreshCcw className="w-5 h-5" />,
+      accent: 'bg-neutral-100 text-neutral-600',
+      scores: [
         {
-          name: 'Asset Replacement Ratio',
-          value: calculatedMetrics.assetReplacementRatio,
+          name: 'Replacement ratio',
+          value: `${m.assetReplacementRatio}`,
           unit: '%',
-          range: { min: 0, max: 100 },
-          description: 'Percentage of assets needing replacement (critical/EOL)',
-          interpretation: undefined,
-          note: undefined,
+          tone: band(m.assetReplacementRatio, 10, 20),
+          info: 'Critical and past-end-of-life assets as a share of all assets.',
+          logic: 'replacement-ratio',
         },
         {
-          name: 'Business Continuity Risk',
-          value: calculatedMetrics.businessContinuityRisk,
-          unit: 'status',
-          range: null,
-          description: `Risk level based on critical assets: ${calculatedMetrics.businessContinuityRisk}`,
-          interpretation: undefined,
-          note: undefined,
+          name: 'Business continuity risk',
+          value: m.businessContinuityRisk,
+          tone: m.businessContinuityRisk === 'Critical' || m.businessContinuityRisk === 'High' ? 'bad' : m.businessContinuityRisk === 'Medium' ? 'warn' : 'good',
+          info: 'Low up to 10% of assets needing replacement, Medium above 10%, High above 20%, Critical above 30%.',
+          logic: 'continuity',
         },
       ],
     },
     {
-      category: 'Compliance & Risk',
-      icon: <Shield className="w-6 h-6" />,
-      color: 'text-red-600',
-      metrics: [
+      title: 'Financial impact',
+      icon: <Wallet className="w-5 h-5" />,
+      accent: 'bg-neutral-100 text-neutral-600',
+      scores: [
         {
-          name: 'Global Compliance Violation Rate',
-          value: calculatedMetrics.globalComplianceViolationRate,
-          unit: '%',
-          range: { min: 0, max: 100 },
-          description: 'Percentage of assets violating compliance standards',
-          interpretation: undefined,
-          note: undefined,
+          name: 'Annual savings potential',
+          value: formatMoney(m.annualCostSavings),
+          tone: 'good',
+          info: 'Maintenance cost plus expected downtime cost that replacing assets would avoid.',
+          logic: 'savings',
+          missing: hasMaint ? undefined : 'Add the “Annual Maintenance Cost” column to see this.',
         },
         {
-          name: 'Compliance Risk Score',
-          value: calculatedMetrics.globalComplianceRiskScore,
-          unit: '/100',
-          range: { min: 0, max: 100 },
-          description: 'Overall compliance risk across all regions and standards',
-          interpretation: undefined,
-          note: undefined,
+          name: 'Investment required',
+          value: formatMoney(m.investmentRequired),
+          info: 'Replacement Cost of critical and past-end-of-life assets.',
+          logic: 'savings',
+          missing: hasReplacement ? undefined : 'Add the “Replacement Cost” column to see this.',
         },
         {
-          name: 'Assets Violating Standards',
-          value: calculatedMetrics.assetsViolatingStandards,
-          unit: 'assets',
-          range: { min: 0, max: importedAssets.length },
-          description: 'Count of assets not meeting applicable compliance standards',
-          interpretation: undefined,
-          note: undefined,
+          name: 'Payback period',
+          value: m.paybackPeriodMonths > 0 ? `${m.paybackPeriodMonths}` : '—',
+          unit: m.paybackPeriodMonths > 0 ? 'months' : undefined,
+          info: 'Investment required ÷ annual savings potential × 12. Shown as — when either is zero.',
+          logic: 'roi',
+          missing: hasMaint && hasReplacement ? undefined : 'Needs both Maintenance Cost and Replacement Cost columns.',
         },
         {
-          name: 'Potential Fine Exposure',
-          value: calculatedMetrics.potentialFineExposure,
-          unit: '$',
-          range: { min: 0, max: null },
-          description: 'Maximum potential fines from current compliance violations',
-          interpretation: undefined,
-          note: undefined,
-        },
-      ],
-    },
-    {
-      category: 'Financial Impact',
-      icon: <Zap className="w-6 h-6" />,
-      color: 'text-purple-600',
-      metrics: [
-        {
-          name: 'Annual Cost Savings (Potential)',
-          value: calculatedMetrics.annualCostSavings,
-          unit: '$',
-          range: { min: 0, max: null },
-          description: 'Potential savings from preventing failures and optimizing maintenance',
-          interpretation: undefined,
-          note: undefined,
-        },
-        {
-          name: 'Investment Required',
-          value: calculatedMetrics.investmentRequired,
-          unit: '$',
-          range: { min: 0, max: null },
-          description: 'Capital needed for critical/end-of-life asset replacement',
-          interpretation: undefined,
-          note: undefined,
-        },
-        {
-          name: '1-Year Savings',
-          value: calculatedMetrics.year1Savings,
-          unit: '$',
-          range: { min: 0, max: null },
-          description: 'Projected first-year savings from asset optimization',
-          interpretation: undefined,
-          note: undefined,
-        },
-        {
-          name: 'Payback Period',
-          value: calculatedMetrics.paybackPeriodMonths,
-          unit: 'months',
-          range: { min: 0, max: null },
-          description: 'Time to recover investment through operational savings',
-          interpretation: undefined,
-          note: undefined,
-        },
-        {
-          name: '3-Year ROI',
-          value: calculatedMetrics.threeYearROI,
-          unit: '%',
-          range: { min: 0, max: null },
-          description: 'Return on investment over three-year period',
-          interpretation: undefined,
-          note: undefined,
+          name: '3-year ROI',
+          value: m.investmentRequired > 0 ? `${m.threeYearROI}` : '—',
+          unit: m.investmentRequired > 0 ? '%' : undefined,
+          tone: m.threeYearROI >= 0 ? 'good' : 'bad',
+          info: '(3 × annual savings − investment) ÷ investment.',
+          logic: 'roi',
+          missing: hasMaint && hasReplacement ? undefined : 'Needs both Maintenance Cost and Replacement Cost columns.',
         },
       ],
     },
   ]
 
-  const getScoreColor = (value: any, range: any) => {
-    if (typeof value !== 'number' || !range || !range.max) return 'text-neutral-600'
-
-    const percentage = (value / range.max) * 100
-    if (percentage > 70) return 'text-red-600'
-    if (percentage > 40) return 'text-yellow-600'
-    return 'text-green-600'
-  }
-
   return (
     <div className="w-full">
-      <PageHeader
-        title="Score Library"
-        description="Comprehensive view of all calculated metrics and supplementary scores"
-        homeHref="/welcome"
-      />
+      <PageHeader title="Score Library" description="Every AssetPulse score in one place, with how each one is calculated" homeHref="/welcome" />
 
-      <div className="p-6 space-y-6 max-w-6xl">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">📚 Score Library Overview</h3>
-          <p className="text-sm text-blue-800">
-            Below are all calculated metrics organized by category. These scores are computed from
-            your imported asset data and provide a comprehensive view of your organization's asset
-            health, environmental impact, and compliance status.
-          </p>
-        </div>
+      <div className="p-6 space-y-6">
+        <FilterBar filters={filters} onChange={setFilters} options={options} shown={assets.length} total={importedAssets.length} />
 
-        {scores.map((category, catIdx) => (
-          <Card key={catIdx}>
-            <CardHeader className="flex items-center gap-3 pb-4 border-b border-neutral-200">
-              <div className={category.color}>{category.icon}</div>
-              <h2 className="text-xl font-semibold text-neutral-900">{category.category}</h2>
-            </CardHeader>
-
-            <CardBody>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {category.metrics.map((metric, metIdx) => (
-                  <div
-                    key={metIdx}
-                    className="p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-neutral-900">{metric.name}</h4>
-                      {metric.range && metric.range.max && (
-                        <div className="text-right">
-                          <div className={`text-2xl font-bold ${getScoreColor(metric.value, metric.range)}`}>
-                            {typeof metric.value === 'number'
-                              ? metric.value.toFixed(0)
-                              : metric.value ?? '0'}
-                          </div>
-                          {metric.value !== 0 && metric.value !== null && metric.value !== undefined && metric.unit !== '/100' && <span className="text-xs text-neutral-500">{metric.unit}</span>}
-                        </div>
-                      )}
-                      {metric.range && !metric.range.max && (
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-neutral-900">
-                            {typeof metric.value === 'number'
-                              ? `$${(metric.value / 1000).toFixed(0)}K`
-                              : metric.value ?? '$0K'}
-                          </div>
-                          {metric.value !== 0 && metric.value !== null && metric.value !== undefined && metric.unit !== '/100' && <span className="text-xs text-neutral-500">{metric.unit}</span>}
-                        </div>
-                      )}
-                      {!metric.range && (
-                        <Badge variant="neutral">{metric.value}</Badge>
-                      )}
-                    </div>
-
-                    <p className="text-sm text-neutral-600 mb-3">{metric.description}</p>
-
-                    {metric.note && (
-                      <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-                        ℹ️ {metric.note}
-                      </div>
-                    )}
-
-                    {metric.interpretation && (
-                      <div className="inline-block">
-                        <Badge
-                          variant={
-                            metric.interpretation === 'Critical'
-                              ? 'danger'
-                              : metric.interpretation === 'Moderate'
-                                ? 'warning'
-                                : metric.interpretation === 'Check Console'
-                                ? 'neutral'
-                                : 'success'
-                          }
-                        >
-                          {metric.interpretation}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
+        {assets.length === 0 ? (
+          <div className="bg-white border border-neutral-200 rounded-xl p-10 text-center text-neutral-500">No assets match these filters.</div>
+        ) : (
+          groups.map(g => (
+            <section key={g.title} className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <span className={`flex items-center justify-center w-9 h-9 rounded-lg ${g.accent}`}>{g.icon}</span>
+                <h2 className="font-semibold text-neutral-900">{g.title}</h2>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                {g.scores.map(s => (
+                  <ScoreTile key={s.name} s={s} />
                 ))}
               </div>
-            </CardBody>
-          </Card>
-        ))}
-
-        {calculatedMetrics.complianceRiskByRegion && Object.keys(calculatedMetrics.complianceRiskByRegion).length > 0 && (
-          <Card>
-            <CardHeader>
-              <h2 className="text-lg font-semibold text-neutral-900">Compliance by Region</h2>
-            </CardHeader>
-            <CardBody>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(calculatedMetrics.complianceRiskByRegion).map(([region, risk]) => (
-                  <div key={region} className="p-4 rounded-lg border border-neutral-200">
-                    <h4 className="font-semibold text-neutral-900 mb-2">{region}</h4>
-                    <p className="text-sm text-neutral-600">
-                      Violations: <span className="font-bold text-neutral-900">{risk}</span>
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
+            </section>
+          ))
         )}
-
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-8">
-          <h3 className="font-semibold text-green-900 mb-2">✨ Using These Scores</h3>
-          <ul className="space-y-1 text-sm text-green-800">
-            <li>• Use the Global Pollution Index as your primary sustainability KPI</li>
-            <li>• Monitor Asset Replacement Ratio to plan capital budgets</li>
-            <li>• Track Health Risk Percentage to justify employee wellness investments</li>
-            <li>• Review Compliance scores to ensure regulatory adherence</li>
-            <li>• Use financial metrics to build ROI cases for asset replacement programs</li>
-          </ul>
-        </div>
       </div>
     </div>
   )

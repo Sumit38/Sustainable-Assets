@@ -1,462 +1,263 @@
 'use client'
 
-import React, { useState } from 'react'
-import Link from 'next/link'
+import React, { useEffect, useMemo, useState } from 'react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { BatteryCharging } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
-import { Card, CardBody, CardHeader } from '@/components/common/Card'
-import { Badge } from '@/components/common/Badge'
-import { Button } from '@/components/common/Button'
+import { FilterBar } from '@/components/dashboard/FilterBar'
+import { AssetDrawer } from '@/components/assets/AssetDrawer'
+import { HEALTH_LABEL, Kpi, NoData, Pagination, Panel, Pill, Empty } from '@/components/common/ui'
 import { useDashboard } from '@/lib/context/dashboardContext'
-import { isDLESuitable, getAssetProfile } from '@/lib/data/assetMaterialDatabase'
-import { TrendingUp, Battery, Droplet, DollarSign, AlertTriangle, CheckCircle, AlertCircle, Zap } from 'lucide-react'
-import { DLEMetricCard } from '@/components/dle/DLEMetricCard'
+import { ImportedAsset } from '@/lib/calculations/metricCalculator'
+import { getAssetProfile } from '@/lib/data/assetMaterialDatabase'
+import {
+  DashboardFilters,
+  EMPTY_FILTERS,
+  filterAssets,
+  filterOptions,
+  filtersFromQuery,
+  formatNumber,
+  isPastEndOfLife,
+  needsAction,
+} from '@/lib/calculations/dashboardInsights'
+
+const PAGE_SIZE = 15
+const PATHWAY_LABEL: Record<string, string> = {
+  DLE: 'Lithium extraction (DLE)',
+  BATTERY_RECYCLING: 'Battery recycling',
+  E_WASTE: 'E-waste recycling',
+  REFURBISHMENT: 'Refurbish & reuse',
+  SCRAP_METAL: 'Scrap metal',
+  DONATION: 'Donation',
+  LANDFILL: 'Landfill',
+}
+
+const lithiumOf = (a: ImportedAsset) => {
+  const p = getAssetProfile(a.assetType)
+  return p?.isDLESuitable ? (p.lithiumContent.min + p.lithiumContent.max) / 2 : 0
+}
 
 export default function DLEPage() {
-  const { importedAssets, calculatedMetrics } = useDashboard()
+  const { importedAssets } = useDashboard()
+  const [filters, setFilters] = useState<DashboardFilters>(EMPTY_FILTERS)
+  const [page, setPage] = useState(0)
+  const [selected, setSelected] = useState<ImportedAsset | null>(null)
+  useEffect(() => setFilters(filtersFromQuery(window.location.search)), [])
+  useEffect(() => setPage(0), [filters])
 
-  // Filter DLE-suitable vs non-DLE assets
-  const dleSuitableAssets = importedAssets.filter(asset => isDLESuitable(asset.assetType))
-  const nonDLEAssets = importedAssets.filter(asset => !isDLESuitable(asset.assetType))
+  const options = useMemo(() => filterOptions(importedAssets), [importedAssets])
+  const assets = useMemo(() => filterAssets(importedAssets, filters), [importedAssets, filters])
 
-  // Calculate realistic DLE metrics ONLY for DLE-suitable assets
-  const calculateDLEMetrics = () => {
-    let totalLithium = 0
-    let totalValue = 0
-    let totalCO2e = 0
+  const data = useMemo(() => {
+    const retiring = assets.filter(needsAction)
+    const batteryFleet = assets.filter(a => getAssetProfile(a.assetType)?.isDLESuitable)
+    const batteryRetiring = batteryFleet.filter(needsAction)
+    const sum = (list: ImportedAsset[], f: (a: ImportedAsset) => number) => list.reduce((s, a) => s + f(a), 0)
 
-    dleSuitableAssets.forEach(asset => {
-      const profile = getAssetProfile(asset.assetType)
-      if (profile) {
-        const avgLithium = (profile.lithiumContent.min + profile.lithiumContent.max) / 2
-        const avgValue = (profile.recoveryValue.min + profile.recoveryValue.max) / 2
-        totalLithium += avgLithium
-        totalValue += avgValue
-        totalCO2e += profile.co2eSavingsVsPrimaryMining
+    const pathways = new Map<string, number>()
+    for (const a of retiring) {
+      const p = getAssetProfile(a.assetType)?.recoveryPathway
+      const label = p ? PATHWAY_LABEL[p] ?? p : 'Not in materials reference'
+      pathways.set(label, (pathways.get(label) ?? 0) + 1)
+    }
+
+    const byType = new Map<string, { type: string; Retiring: number; 'Still in use': number }>()
+    for (const a of batteryFleet) {
+      const row = byType.get(a.assetType) ?? { type: a.assetType, Retiring: 0, 'Still in use': 0 }
+      row[needsAction(a) ? 'Retiring' : 'Still in use'] += lithiumOf(a)
+      byType.set(a.assetType, row)
+    }
+
+    const today = new Date()
+    const buckets = [
+      { label: 'Due now', test: (a: ImportedAsset, m: number) => needsAction(a) || m < 0 },
+      { label: '< 1 year', test: (_: ImportedAsset, m: number) => m >= 0 && m < 12 },
+      { label: '1–2 years', test: (_: ImportedAsset, m: number) => m >= 12 && m < 24 },
+      { label: '2–4 years', test: (_: ImportedAsset, m: number) => m >= 24 && m < 48 },
+      { label: '4+ years', test: (_: ImportedAsset, m: number) => m >= 48 },
+    ]
+    const pipeline = buckets.map(b => ({ label: b.label, kg: 0, devices: 0 }))
+    for (const a of batteryFleet) {
+      const end = new Date(a.lastDateOfSupport)
+      const m = isNaN(end.getTime()) ? Infinity : (end.getTime() - today.getTime()) / (86400000 * 30.44)
+      const i = buckets.findIndex(b => b.test(a, m))
+      if (i >= 0) {
+        pipeline[i].kg += lithiumOf(a)
+        pipeline[i].devices++
       }
-    })
+    }
 
     return {
-      totalRecoverableLithium: totalLithium.toFixed(2),
-      dleSuitableAssets: dleSuitableAssets.length,
-      totalLithiumValue: Math.round(totalValue),
-      co2eSavingsVsDLE: totalCO2e,
-      dleCandidatePercentage: importedAssets.length > 0 ? ((dleSuitableAssets.length / importedAssets.length) * 100).toFixed(1) : 0,
+      retiring,
+      batteryFleet,
+      batteryRetiring,
+      lithiumNow: sum(batteryRetiring, lithiumOf),
+      lithiumFleet: sum(batteryFleet, lithiumOf),
+      co2eAvoided: sum(batteryRetiring, a => getAssetProfile(a.assetType)?.co2eSavingsVsPrimaryMining ?? 0),
+      pathways: Array.from(pathways.entries()).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+      byType: Array.from(byType.values()).map(r => ({ ...r, Retiring: +r.Retiring.toFixed(3), 'Still in use': +r['Still in use'].toFixed(3) })),
+      pipeline: pipeline.map(p => ({ ...p, kg: +p.kg.toFixed(3) })),
     }
-  }
+  }, [assets])
 
-  const dleMetrics = calculateDLEMetrics()
-
-  // Calculate portfolio composition
-  const portfolioComposition = {
-    electronics: importedAssets.filter(a => ['Laptop', 'Tablet', 'Smartphone', 'Desktop Computer', 'Monitor', 'Server', 'UPS System', 'Network Router'].includes(a.assetType)).length,
-    furniture: importedAssets.filter(a => ['Chair', 'Table', 'Desk', 'Filing Cabinet', 'Cubicle System'].includes(a.assetType)).length,
-    other: importedAssets.filter(a => !['Laptop', 'Tablet', 'Smartphone', 'Desktop Computer', 'Monitor', 'Server', 'UPS System', 'Network Router', 'Chair', 'Table', 'Desk', 'Filing Cabinet', 'Cubicle System'].includes(a.assetType)).length,
-  }
-
-  // ===== SCENARIO 1: No assets imported =====
   if (importedAssets.length === 0) {
     return (
       <div className="w-full">
-        <PageHeader
-          title="Asset Recovery Analytics"
-          description="Optimize your asset portfolio with DLE and alternative recovery strategies"
-          homeHref="/welcome"
-        />
-        <div className="p-6 max-w-6xl">
-          <Card className="bg-blue-50 border-blue-200">
-            <CardBody className="text-center py-12">
-              <AlertCircle className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Assets Uploaded</h3>
-              <p className="text-sm text-neutral-600 mb-6">
-                Upload your asset inventory to see recovery opportunities including DLE analytics, refurbishment options, and more.
-              </p>
-              <Link href="/dashboard">
-                <Button variant="primary">Go to Dashboard & Import Assets</Button>
-              </Link>
-            </CardBody>
-          </Card>
+        <PageHeader title="DLE Analytics" description="How much lithium your retiring devices can return" homeHref="/welcome" />
+        <div className="p-6">
+          <NoData what="lithium recovery analytics" />
         </div>
       </div>
     )
   }
 
-  // ===== SCENARIO 2: Only non-DLE assets (No DLE-suitable items) =====
-  if (dleSuitableAssets.length === 0) {
-    return (
-      <div className="w-full">
-        <PageHeader
-          title="Asset Recovery Analytics"
-          description="Optimize your asset portfolio with alternative recovery strategies"
-          homeHref="/welcome"
-        />
-        <div className="p-6 space-y-6 max-w-6xl">
-          {/* Alert: No DLE-suitable assets */}
-          <Card className="bg-warning-50 border-warning-200">
-            <CardBody>
-              <div className="flex gap-4">
-                <AlertTriangle className="w-6 h-6 text-warning-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-semibold text-warning-900 mb-2">ℹ️ No DLE-Suitable Assets Detected</h3>
-                  <p className="text-sm text-warning-800 mb-2">
-                    Your portfolio consists of <strong>{portfolioComposition.furniture} furniture items</strong> and <strong>{portfolioComposition.other} other assets</strong>.
-                    Direct Lithium Extraction is not applicable to your current asset mix.
-                  </p>
-                  <p className="text-sm text-warning-800">
-                    However, you still have significant recovery opportunities through alternative pathways!
-                  </p>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Portfolio Composition */}
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold">Your Asset Composition</h3>
-            </CardHeader>
-            <CardBody>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200">
-                  <p className="text-sm text-neutral-600 mb-2">Electronics</p>
-                  <p className="text-3xl font-bold text-neutral-900">{portfolioComposition.electronics}</p>
-                  <p className="text-xs text-neutral-500">{((portfolioComposition.electronics / importedAssets.length) * 100).toFixed(0)}% of portfolio</p>
-                </div>
-                <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200">
-                  <p className="text-sm text-neutral-600 mb-2">Furniture</p>
-                  <p className="text-3xl font-bold text-neutral-900">{portfolioComposition.furniture}</p>
-                  <p className="text-xs text-neutral-500">{((portfolioComposition.furniture / importedAssets.length) * 100).toFixed(0)}% of portfolio</p>
-                </div>
-                <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200">
-                  <p className="text-sm text-neutral-600 mb-2">Other Assets</p>
-                  <p className="text-3xl font-bold text-neutral-900">{portfolioComposition.other}</p>
-                  <p className="text-xs text-neutral-500">{((portfolioComposition.other / importedAssets.length) * 100).toFixed(0)}% of portfolio</p>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Empty DLE Cards (Greyed out) */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 opacity-50">
-            <Card>
-              <CardBody>
-                <p className="text-xs text-neutral-500 mb-2">Recoverable Lithium</p>
-                <p className="text-3xl font-bold text-neutral-300">—</p>
-                <p className="text-xs text-neutral-400">Not applicable</p>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
-                <p className="text-xs text-neutral-500 mb-2">DLE-Suitable Assets</p>
-                <p className="text-3xl font-bold text-neutral-300">0</p>
-                <p className="text-xs text-neutral-400">None detected</p>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
-                <p className="text-xs text-neutral-500 mb-2">DLE Recovery Value</p>
-                <p className="text-3xl font-bold text-neutral-300">$0</p>
-                <p className="text-xs text-neutral-400">Not applicable</p>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
-                <p className="text-xs text-neutral-500 mb-2">CO₂e Savings (DLE)</p>
-                <p className="text-3xl font-bold text-neutral-300">—</p>
-                <p className="text-xs text-neutral-400">Not applicable</p>
-              </CardBody>
-            </Card>
-          </div>
-
-          {/* Alternative Recovery Strategies */}
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold">💰 Alternative Recovery Strategies</h3>
-            </CardHeader>
-            <CardBody>
-              <div className="space-y-3">
-                <div className="p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-neutral-900">Refurbishment</h4>
-                      <p className="text-sm text-neutral-600">Extend asset lifecycle through refurbishment and resale</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-primary-600">${portfolioComposition.furniture * 40}</p>
-                      <p className="text-xs text-neutral-500">{portfolioComposition.furniture} assets</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-neutral-900">Donation</h4>
-                      <p className="text-sm text-neutral-600">Partner with NGOs for charitable furniture donation programs</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-green-600">Tax Deduction</p>
-                      <p className="text-xs text-neutral-500">+Social Impact</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-neutral-900">Scrap Metal Recovery</h4>
-                      <p className="text-sm text-neutral-600">Capture value from metal components in furniture</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-warning-600">${portfolioComposition.furniture * 15}</p>
-                      <p className="text-xs text-neutral-500">Metal recovery</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Recommendation */}
-          <Card className="bg-gradient-to-r from-primary-50 to-primary-100 border-primary-200">
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-primary-900">📊 Next Steps</h3>
-            </CardHeader>
-            <CardBody className="space-y-2 text-sm text-primary-900">
-              <p>✓ Focus on REFURBISHMENT: Extend asset lifecycle through refurbishment programs</p>
-              <p>✓ DONATE: Partner with NGOs for furniture donation and get tax benefits</p>
-              <p>✓ SCRAP RECOVERY: Capture value from metal components</p>
-              <p>✓ If you acquire electronics in future, DLE will become applicable</p>
-            </CardBody>
-          </Card>
-        </div>
-      </div>
-    )
-  }
-
-  // ===== SCENARIO 3: Mixed portfolio OR DLE-suitable assets =====
   return (
     <div className="w-full">
-      <PageHeader
-        title="Asset Recovery Analytics"
-        description="Maximize recovery value with DLE and alternative recovery strategies"
-        homeHref="/welcome"
-      />
+      <PageHeader title="DLE Analytics" description="How much lithium your retiring devices can return, so less needs to be mined" homeHref="/welcome" />
 
-      <div className="p-6 space-y-6 max-w-6xl">
-        {/* Portfolio Alert if Mixed */}
-        {nonDLEAssets.length > 0 && (
-          <Card className="bg-blue-50 border-blue-200">
-            <CardBody>
-              <p className="text-sm text-blue-800">
-                📊 Your portfolio has <strong>{dleSuitableAssets.length} DLE-suitable</strong> asset(s) and <strong>{nonDLEAssets.length} non-DLE</strong> asset(s).
-                Below shows recovery strategies for your complete asset mix.
-              </p>
-            </CardBody>
-          </Card>
-        )}
+      <div className="p-6 space-y-6">
+        <div className="flex gap-3 bg-primary-50 border border-primary-500/20 rounded-xl p-4 text-sm text-primary-800">
+          <BatteryCharging className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <p>
+            Laptops, tablets, phones, UPS systems and electric vehicles contain lithium-ion batteries. When they retire, the
+            lithium can be recovered through recycling and Direct Lithium Extraction (DLE) instead of being mined again. Lithium
+            figures use the typical content of each device type from AssetPulse&apos;s materials reference, since your file
+            doesn&apos;t record battery size.
+          </p>
+        </div>
 
-        {/* DLE SECTION - Only shows if dleSuitableAssets.length > 0 */}
-        {dleSuitableAssets.length > 0 && (
-          <>
-            {/* DLE Overview */}
-            <div className="bg-gradient-to-r from-primary-50 to-primary-100 border border-primary-200 rounded-lg p-6">
-              <div className="flex items-start gap-4">
-                <Battery className="w-8 h-8 text-primary-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-primary-900 mb-2">DLE (Direct Lithium Extraction)</h3>
-                  <p className="text-sm text-primary-800 mb-3">
-                    {dleSuitableAssets.length} of your assets are suitable for Direct Lithium Extraction. DLE is a faster, more sustainable alternative to traditional lithium mining, reducing water consumption by 95% and extracting lithium within hours instead of years.
-                  </p>
-                  <div className="flex gap-4 text-xs">
-                    <div>
-                      <span className="font-semibold text-primary-900">95%</span>
-                      <p className="text-primary-700">Less water</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-primary-900">Hours</span>
-                      <p className="text-primary-700">vs. 2 years</p>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-primary-900">73%</span>
-                      <p className="text-primary-700">Lower CO₂</p>
-                    </div>
-                  </div>
-                </div>
+        <FilterBar filters={filters} onChange={setFilters} options={options} shown={assets.length} total={importedAssets.length} />
+
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+          <Kpi
+            label="Recoverable now"
+            value={`${data.lithiumNow.toFixed(2)} kg`}
+            sub={`lithium in ${data.batteryRetiring.length} retiring devices`}
+            tone="text-primary-700"
+            info="Lithium in battery devices that are critical or past end of life. Same figure as the dashboard card."
+          />
+          <Kpi
+            label="Lithium in your fleet"
+            value={`${data.lithiumFleet.toFixed(2)} kg`}
+            sub={`across ${data.batteryFleet.length} battery devices`}
+            info="Total lithium in all battery devices, including ones still in use. This is your future recovery pipeline."
+          />
+          <Kpi
+            label="Mining CO₂e avoided"
+            value={`${formatNumber(data.co2eAvoided)} kg`}
+            sub="by recovering instead of mining"
+            tone="text-success-600"
+            info="CO₂e saved versus primary lithium mining for the retiring devices, using the per-device values in the materials reference."
+          />
+          <Kpi label="Assets retiring" value={data.retiring.length.toString()} sub="all types, critical or past end of life" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Panel title="Lithium recovery pipeline" info="Lithium in battery devices, grouped by when their support ends. Shows how much will become recoverable over time.">
+            {data.batteryFleet.length === 0 ? (
+              <Empty>No lithium-battery devices in this selection.</Empty>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.pipeline} margin={{ left: -8, right: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
+                    <YAxis tick={{ fontSize: 11 }} unit=" kg" />
+                    <Tooltip formatter={(v: number, _n, p: any) => [`${v} kg (${p.payload.devices} devices)`, 'Lithium']} />
+                    <Bar dataKey="kg" fill="#0ea5e9" maxBarSize={48} radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            </div>
+            )}
+          </Panel>
 
-            {/* DLE Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <DLEMetricCard
-                label="Recoverable Lithium"
-                value={dleMetrics.totalRecoverableLithium}
-                unit="kg"
-                icon={<Battery className="w-8 h-8" />}
-                color="success"
-                description={`Sum of lithium from ${dleMetrics.dleSuitableAssets} DLE-suitable assets in your portfolio.`}
-                calculation="Sum of (asset lithium content min-max average × quantity) for all DLE-suitable assets from materials database. Includes Laptops, Tablets, Smartphones, UPS Systems, and Electric Vehicles."
-              />
-
-              <DLEMetricCard
-                label="DLE-Suitable Assets"
-                value={dleMetrics.dleSuitableAssets}
-                unit={`${dleMetrics.dleCandidatePercentage}% of inventory`}
-                icon={<CheckCircle className="w-8 h-8" />}
-                color="primary"
-                description="Assets containing lithium batteries that can be processed through Direct Lithium Extraction."
-                calculation="Count of assets where isDLESuitable = true. Includes: Laptops, Tablets, Smartphones, UPS Systems, and Electric Vehicles. Excluded: Monitors, Desktops, Servers, Furniture, and non-battery electronics."
-              />
-
-              <DLEMetricCard
-                label="DLE Recovery Value"
-                value={`$${dleMetrics.totalLithiumValue}`}
-                unit="at current rates"
-                icon={<DollarSign className="w-8 h-8" />}
-                color="warning"
-                description="Estimated monetary value recoverable through DLE processing at current market prices."
-                calculation="Sum of (asset recovery value min-max average) for all DLE-suitable assets from materials database. Based on lithium market pricing (~$10-15k/kg). Values from: Laptops ($800-1200), Tablets ($200-500), Smartphones ($50-300), UPS Systems ($500-2000), EVs ($5000-15000)."
-              />
-
-              <DLEMetricCard
-                label="CO₂e Savings"
-                value={dleMetrics.co2eSavingsVsDLE}
-                unit="kg vs primary mining"
-                icon={<Droplet className="w-8 h-8" />}
-                color="green"
-                description="Carbon emissions prevented by using DLE instead of traditional primary lithium mining."
-                calculation="Sum of (asset co2eSavingsVsPrimaryMining) for all DLE-suitable assets. DLE reduces mining emissions by ~95% vs traditional extraction. Also avoids evaporation pond water loss (95% reduction in water consumption)."
-              />
-            </div>
-
-            {/* DLE-Suitable Assets List */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold">✅ DLE-Suitable Assets in Your Portfolio</h3>
-              </CardHeader>
-              <CardBody>
-                <div className="space-y-2">
-                  {dleSuitableAssets.map(asset => {
-                    const profile = getAssetProfile(asset.assetType)
-                    return (
-                      <div key={asset.assetId} className="p-3 bg-success-50 rounded-lg border border-success-200">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-semibold text-neutral-900">{asset.productName}</p>
-                            <p className="text-xs text-neutral-600">{asset.assetType}</p>
-                          </div>
-                          <Badge variant="success">✅ DLE Ready</Badge>
-                        </div>
-                        {profile && (
-                          <div className="mt-2 text-xs text-neutral-600 space-y-1">
-                            <p>Est. Lithium: {profile.lithiumContent.min}-{profile.lithiumContent.max}kg</p>
-                            <p>Est. Value: ${profile.recoveryValue.min}-${profile.recoveryValue.max}</p>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardBody>
-            </Card>
-          </>
-        )}
-
-        {/* NON-DLE RECOVERY STRATEGIES */}
-        {nonDLEAssets.length > 0 && (
-          <>
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold">
-                  🔄 Alternative Recovery Pathways ({nonDLEAssets.length} assets)
-                </h3>
-              </CardHeader>
-              <CardBody>
-                <p className="text-sm text-neutral-600 mb-4">
-                  While not suitable for DLE, these assets have value through other recovery pathways:
-                </p>
-                <div className="space-y-3">
-                  {nonDLEAssets.map(asset => {
-                    const profile = getAssetProfile(asset.assetType)
-                    return (
-                      <div key={asset.assetId} className="p-3 bg-warning-50 rounded-lg border border-warning-200">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-semibold text-neutral-900">{asset.productName}</p>
-                            <p className="text-xs text-neutral-600">{asset.assetType}</p>
-                          </div>
-                          <Badge variant="warning">{profile?.recoveryPathway || 'UNKNOWN'}</Badge>
-                        </div>
-                        {profile && (
-                          <p className="text-xs text-neutral-600">
-                            💰 Est. Value: ${profile.recoveryValue.min}-${profile.recoveryValue.max} via {profile.recoveryPathway}
-                          </p>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardBody>
-            </Card>
-          </>
-        )}
-
-        {/* Supply Chain Risk Section - Only show if DLE assets exist */}
-        {dleSuitableAssets.length > 0 && (
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-warning-600" />
-                Supply Chain Risk & Market Dynamics
-              </h3>
-            </CardHeader>
-            <CardBody>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="border-l-4 border-l-danger-500 pl-4">
-                  <h4 className="font-semibold text-neutral-900 mb-2">Lithium Supply Concentration</h4>
-                  <p className="text-2xl font-bold text-danger-600 mb-1">72%</p>
-                  <p className="text-sm text-neutral-600 mb-3">Sourced from China/South America</p>
-                  <p className="text-xs text-neutral-500">
-                    High geopolitical risk. Internal recovery through DLE reduces dependency.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-l-warning-500 pl-4">
-                  <h4 className="font-semibold text-neutral-900 mb-2">Price Trajectory (12-month)</h4>
-                  <p className="text-2xl font-bold text-warning-600 mb-1">+18-24%</p>
-                  <p className="text-sm text-neutral-600 mb-3">Expected lithium price increase</p>
-                  <p className="text-xs text-neutral-500">
-                    Projected growth driven by EV adoption & battery demand expansion.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-l-success-500 pl-4">
-                  <h4 className="font-semibold text-neutral-900 mb-2">DLE Market Maturity</h4>
-                  <p className="text-2xl font-bold text-success-600 mb-1">2025-2027</p>
-                  <p className="text-sm text-neutral-600 mb-3">Commercial scale deployment</p>
-                  <p className="text-xs text-neutral-500">
-                    Lilac Solutions, EnergyX, Livent scaling. Optimal recovery window: NOW.
-                  </p>
-                </div>
+          <Panel title="Lithium by device type" info="Lithium per device type, split into retiring devices and devices still in use.">
+            {data.byType.length === 0 ? (
+              <Empty>No lithium-battery devices in this selection.</Empty>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.byType} layout="vertical" margin={{ left: 8, right: 16 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11 }} unit=" kg" />
+                    <YAxis type="category" dataKey="type" width={100} tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(v: number) => `${v} kg`} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="Retiring" stackId="a" fill="#0284c7" maxBarSize={28} />
+                    <Bar dataKey="Still in use" stackId="a" fill="#bae6fd" maxBarSize={28} radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            </CardBody>
-          </Card>
-        )}
+            )}
+          </Panel>
+        </div>
 
-        {/* Summary Card */}
-        <Card className="bg-gradient-to-r from-success-50 to-success-100 border-success-200">
-          <CardHeader>
-            <h3 className="text-lg font-semibold text-success-900">📊 Total Recovery Value</h3>
-          </CardHeader>
-          <CardBody>
-            <div className="text-3xl font-bold text-success-600 mb-2">
-              ${(dleMetrics.totalLithiumValue + (nonDLEAssets.length * 50)).toLocaleString()}
+        <Panel
+          title="Where retiring assets should go"
+          info="The recommended end-of-life route for every retiring asset, by type, from the materials reference. Battery devices go to lithium recovery; furniture and other items to refurbishment, recycling or donation."
+        >
+          {data.pathways.length === 0 ? (
+            <Empty>No assets are retiring in this selection.</Empty>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {data.pathways.map(p => (
+                <div key={p.name} className="rounded-lg border border-neutral-200 p-3">
+                  <p className="text-2xl font-bold text-neutral-900">{p.count}</p>
+                  <p className="text-sm text-neutral-600">{p.name}</p>
+                </div>
+              ))}
             </div>
-            <p className="text-sm text-success-800">
-              Combined value from DLE ({dleSuitableAssets.length} assets) + Alternative pathways ({nonDLEAssets.length} assets)
-            </p>
-          </CardBody>
-        </Card>
+          )}
+        </Panel>
+
+        <Panel title={`Retiring battery devices (${data.batteryRetiring.length})`} info="Battery devices that are critical or past end of life: ready to send for lithium recovery.">
+          {data.batteryRetiring.length === 0 ? (
+            <Empty>No retiring battery devices in this selection. Check the pipeline above for when they&apos;ll become available.</Empty>
+          ) : (
+            <>
+              <div className="overflow-x-auto -mx-5">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-neutral-500 border-b border-neutral-200">
+                      <th className="px-5 py-2 font-medium">Asset</th>
+                      <th className="px-3 py-2 font-medium">Type</th>
+                      <th className="px-3 py-2 font-medium">Department</th>
+                      <th className="px-3 py-2 font-medium">Status</th>
+                      <th className="px-3 py-2 font-medium">Support ends</th>
+                      <th className="px-5 py-2 font-medium text-right">Lithium (est.)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.batteryRetiring.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map(a => {
+                      const h = HEALTH_LABEL[isPastEndOfLife(a) ? 'end-of-life' : a.healthStatus]
+                      return (
+                        <tr key={a.assetId} className="border-b border-neutral-100 hover:bg-neutral-50">
+                          <td className="px-5 py-2">
+                            <button type="button" onClick={() => setSelected(a)} className="text-left">
+                              <span className="block font-medium text-primary-700 hover:underline">{a.assetId}</span>
+                              <span className="block text-xs text-neutral-500 truncate max-w-[200px]">{a.productName}</span>
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 text-neutral-700">{a.assetType}</td>
+                          <td className="px-3 py-2 text-neutral-700">{a.department}</td>
+                          <td className="px-3 py-2">
+                            <Pill tone={h.tone}>{h.label}</Pill>
+                          </td>
+                          <td className="px-3 py-2 text-neutral-700 whitespace-nowrap">{a.lastDateOfSupport}</td>
+                          <td className="px-5 py-2 text-right font-medium text-neutral-900">{lithiumOf(a).toFixed(3)} kg</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination page={page} pageSize={PAGE_SIZE} total={data.batteryRetiring.length} onPage={setPage} />
+            </>
+          )}
+        </Panel>
       </div>
+
+      <AssetDrawer asset={selected} onClose={() => setSelected(null)} />
     </div>
   )
 }
