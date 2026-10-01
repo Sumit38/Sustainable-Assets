@@ -338,7 +338,7 @@ export function calculateComplianceExposure(
   }
 
   return {
-    regularoyFines,
+    regulatoryFines,
     businessImpact,
     total: regulatoryFines + businessImpact,
   }
