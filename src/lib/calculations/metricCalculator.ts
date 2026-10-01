@@ -12,6 +12,7 @@ import {
   getCarbonFactor,
   calculateMethaneCO2e,
 } from '@/lib/data/impactFactors'
+import { calculateFactorsWithConfidence, DataSource } from './factorCalculator'
 
 export interface ImportedAsset {
   assetId: string
@@ -29,6 +30,26 @@ export interface ImportedAsset {
   location: string
   cost: number
   purchaseDate: string
+
+  // Optional extended template fields for impact factors
+  employeesAffected?: number
+  healthIssuesPerYear?: number
+  annualMaintenanceCost?: number
+  downtimeHoursPerFailure?: number
+  downtimeCostPerHour?: number
+  replacementCost?: number
+  annualCO2e?: number
+  powerWatts?: number
+
+  // User answers from questionnaire (if provided)
+  questionnaireAnswers?: Record<string, number>
+
+  // Data source transparency
+  factorDataSources?: {
+    health: DataSource
+    cost: DataSource
+    carbon: DataSource
+  }
 }
 
 export interface CalculatedMetrics {
@@ -202,7 +223,16 @@ function calculateHealthImpact(assets: ImportedAsset[]) {
 
   for (const asset of assets) {
     if (asset.healthStatus !== 'healthy') {
-      const factor = getHealthImpactFactor(asset.assetType)
+      // Use smart fallback system: template data > Q&A answers > industry standard
+      const factorResult = calculateFactorsWithConfidence(
+        asset.assetType,
+        {
+          employeesAffected: asset.employeesAffected,
+          healthIssuesPerYear: asset.healthIssuesPerYear,
+        },
+        asset.questionnaireAnswers
+      )
+
       const riskMultiplier = {
         'at-risk': 1.5,
         'critical': 2.5,
@@ -210,8 +240,12 @@ function calculateHealthImpact(assets: ImportedAsset[]) {
         'healthy': 0,
       }[asset.healthStatus]
 
-      totalEmployeesAtRisk += factor.affectedEmployeesPerAsset * riskMultiplier
-      totalHealthIssuesPredicted += factor.healthIssuesPerYear * riskMultiplier
+      totalEmployeesAtRisk += factorResult.healthFactor.value * riskMultiplier
+      totalHealthIssuesPredicted += (asset.healthIssuesPerYear || 0) * riskMultiplier
+
+      // Track data source for transparency
+      if (!asset.factorDataSources) asset.factorDataSources = {} as any
+      asset.factorDataSources.health = factorResult.healthFactor.source
     }
   }
 
@@ -228,7 +262,18 @@ function calculateCostImpact(assets: ImportedAsset[]) {
   let investmentRequired = 0
 
   for (const asset of assets) {
-    const costFactor = getCostFactor(asset.assetType)
+    // Use smart fallback system: template data > Q&A answers > industry standard
+    const factorResult = calculateFactorsWithConfidence(
+      asset.assetType,
+      {
+        annualMaintenanceCost: asset.annualMaintenanceCost,
+        downtimeHours: asset.downtimeHoursPerFailure,
+        downtimeCostPerHour: asset.downtimeCostPerHour,
+        replacementCost: asset.replacementCost,
+      },
+      asset.questionnaireAnswers
+    )
+
     const failureRisk = {
       'healthy': 0.05,
       'at-risk': 0.3,
@@ -236,16 +281,29 @@ function calculateCostImpact(assets: ImportedAsset[]) {
       'end-of-life': 1.0,
     }[asset.healthStatus]
 
-    totalMaintenanceCosts += costFactor.annualMaintenanceCost
-    totalDowntimeCost +=
-      costFactor.downtimeHoursPerFailure *
-      costFactor.downtimeCostPerHour *
-      failureRisk
+    totalMaintenanceCosts += factorResult.costFactor.value
+
+    // Calculate downtime cost with smart fallback
+    const downtimeHours = asset.downtimeHoursPerFailure ||
+      asset.questionnaireAnswers?.downtimeHoursPerFailure ||
+      getCostFactor(asset.assetType).downtimeHoursPerFailure
+    const downtimeCostPerHour = asset.downtimeCostPerHour ||
+      asset.questionnaireAnswers?.downtimeCostPerHour ||
+      getCostFactor(asset.assetType).downtimeCostPerHour
+
+    totalDowntimeCost += downtimeHours * downtimeCostPerHour * failureRisk
 
     if (asset.healthStatus === 'critical' || asset.healthStatus === 'end-of-life') {
-      investmentRequired += costFactor.averageReplacementCost
-      totalReplacementNeeded += costFactor.averageReplacementCost
+      const replacementCost = asset.replacementCost ||
+        asset.questionnaireAnswers?.replacementCost ||
+        getCostFactor(asset.assetType).averageReplacementCost
+      investmentRequired += replacementCost
+      totalReplacementNeeded += replacementCost
     }
+
+    // Track data source for transparency
+    if (!asset.factorDataSources) asset.factorDataSources = {} as any
+    asset.factorDataSources.cost = factorResult.costFactor.source
   }
 
   const potentialSavings = totalMaintenanceCosts + totalDowntimeCost
@@ -262,13 +320,18 @@ function calculateCarbonImpact(assets: ImportedAsset[]) {
   let totalEndOfLifeEmissions = 0
 
   for (const asset of assets) {
-    const carbonFactor = getCarbonFactor(asset.assetType)
+    // Use smart fallback system: user CO2e > power calculation > Q&A answers > industry standard
+    const factorResult = calculateFactorsWithConfidence(
+      asset.assetType,
+      {
+        annualCO2e: asset.annualCO2e,
+        powerWatts: asset.powerWatts,
+      },
+      asset.questionnaireAnswers
+    )
 
-    // Operational emissions (annual)
-    totalOperationalEmissions +=
-      carbonFactor.scopeOneEmissions +
-      carbonFactor.scopeTwoEmissions +
-      carbonFactor.scopeThreeEmissions
+    // Operational emissions (annual) - convert from tonnes to kg
+    totalOperationalEmissions += factorResult.carbonFactor.value * 1000
 
     // End-of-life methane emissions (for assets that need replacement or are past EOL)
     const isPastEOL = isAssetPastEndOfLife(asset.lastDateOfSupport)
@@ -278,9 +341,14 @@ function calculateCarbonImpact(assets: ImportedAsset[]) {
       asset.daysUntilEndOfSupport < 0 ||
       isPastEOL
     ) {
+      const carbonFactor = getCarbonFactor(asset.assetType)
       const methaneCO2e = calculateMethaneCO2e(carbonFactor.methaneGenerationFactor)
       totalEndOfLifeEmissions += methaneCO2e
     }
+
+    // Track data source for transparency
+    if (!asset.factorDataSources) asset.factorDataSources = {} as any
+    asset.factorDataSources.carbon = factorResult.carbonFactor.source
   }
 
   // Estimate scope 2 and 3 (approximately 30% and 40% of operational emissions)

@@ -9,7 +9,7 @@
  * Also tracks confidence level: actual / calculated / estimated
  */
 
-import { getHealthImpactFactor, getCostFactor, getCarbonFactor } from './impactFactors'
+import { getHealthImpactFactor, getCostFactor, getCarbonFactor } from '../data/impactFactors'
 
 export type DataSource = 'actual' | 'calculated' | 'estimated'
 

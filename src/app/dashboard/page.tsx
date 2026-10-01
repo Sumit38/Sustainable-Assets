@@ -13,11 +13,12 @@ import { DashboardMetrics, AssetWithHealthStatus, AssetTypeCount, AssetType, Sup
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Package, AlertTriangle, TrendingUp, Shield, DollarSign, Users, Leaf, Heart, Zap, Download, Upload, FileText, Bell, File, Check, AlertCircle, Battery, CheckCircle } from 'lucide-react'
 import { exportDashboardToCSV, exportDashboardToPDF } from '@/lib/export/dashboardExport'
-import { validateAndProcessCSV } from '@/lib/import/csvProcessor'
+import { validateAndProcessCSV, ExtendedImportedAsset } from '@/lib/import/csvProcessor'
 import { calculateMetrics, CalculatedMetrics } from '@/lib/calculations/metricCalculator'
 import { ImportedAsset } from '@/lib/calculations/metricCalculator'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { getCalculationDescription } from '@/lib/data/calculationDescriptions'
+import { CSVImportWithQuestionnaire } from '@/components/import/CSVImportWithQuestionnaire'
 
 const HEALTH_COLORS = {
   healthy: '#22c55e',
@@ -33,6 +34,8 @@ export default function Dashboard() {
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false)
+  const [pendingAssets, setPendingAssets] = useState<ExtendedImportedAsset[] | null>(null)
   const { importedAssets, calculatedMetrics, setDashboardData, loadDashboardData } = useDashboard()
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
@@ -147,13 +150,41 @@ export default function Dashboard() {
         return
       }
 
+      // Check if questionnaire is needed for missing factor fields
+      const assetsNeedingFactors = result.assets.filter(asset => {
+        const hasEmployeeData = asset.employeesAffected !== undefined
+        const hasHealthData = asset.healthIssuesPerYear !== undefined
+        const hasCostData = asset.annualMaintenanceCost !== undefined
+        const hasCarbonData = asset.annualCO2e !== undefined || asset.powerWatts !== undefined
+
+        return !hasEmployeeData || !hasHealthData || !hasCostData || !hasCarbonData
+      })
+
+      if (assetsNeedingFactors.length > 0) {
+        // Show questionnaire for assets with missing fields
+        setPendingAssets(result.assets)
+        setShowQuestionnaire(true)
+        setImportSuccess(`${result.assetsImported} assets loaded. ${assetsNeedingFactors.length} assets need additional information.`)
+      } else {
+        // All assets have factor data - calculate metrics directly
+        completeImport(result.assets as ExtendedImportedAsset[])
+      }
+    } catch (err) {
+      setImportError(`Upload error: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function completeImport(assets: ExtendedImportedAsset[]) {
+    try {
       // Calculate metrics from imported assets
-      const metrics = calculateMetrics(result.assets)
+      const metrics = calculateMetrics(assets)
 
       // Save to context (persists to localStorage)
-      setDashboardData(result.assets, metrics)
+      setDashboardData(assets, metrics)
 
-      setImportSuccess(`Successfully imported ${result.assetsImported} assets! Metrics calculated.`)
+      setImportSuccess(`Successfully imported ${assets.length} assets! Metrics calculated.`)
 
       // Reload dashboard with new metrics
       await loadDashboardMetrics()
@@ -163,9 +194,20 @@ export default function Dashboard() {
         kpisRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 300)
     } catch (err) {
-      setImportError(`Upload error: ${err instanceof Error ? err.message : 'Unknown error'}`)
-    } finally {
-      setUploading(false)
+      setImportError(`Error calculating metrics: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    }
+  }
+
+  function handleQuestionnaireComplete(assetsWithAnswers: ExtendedImportedAsset[]) {
+    setShowQuestionnaire(false)
+    setPendingAssets(null)
+    completeImport(assetsWithAnswers)
+  }
+
+  function handleQuestionnaireSkip() {
+    setShowQuestionnaire(false)
+    if (pendingAssets) {
+      completeImport(pendingAssets)
     }
   }
 
@@ -197,7 +239,15 @@ export default function Dashboard() {
   ]
 
   return (
-    <div className="w-full">
+    <>
+      {showQuestionnaire && pendingAssets && (
+        <CSVImportWithQuestionnaire
+          assets={pendingAssets}
+          onComplete={handleQuestionnaireComplete}
+          onSkip={handleQuestionnaireSkip}
+        />
+      )}
+      <div className="w-full">
       <PageHeader title="Dashboard" description="Real-time asset health overview" alerts={metrics.pendingAlerts} showHomeButton={true} homeHref="/welcome" />
 
       <div className="p-6 space-y-6">
@@ -735,12 +785,12 @@ export default function Dashboard() {
               <p className="text-xs text-neutral-600 mb-4">
                 Accepted format: CSV with 15 columns (Asset ID, Type, Manufacturer, Health Status, Compliance Score, Country, Region, etc.)
               </p>
-              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-sm text-primary-900 mb-1">Need help with data format?</p>
-                    <p className="text-xs text-primary-700">Download the standard template to ensure your data structure matches requirements</p>
-                  </div>
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="font-semibold text-sm text-primary-900 mb-1">Template Options</p>
+                  <p className="text-xs text-primary-700">Choose the template that best fits your data</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="primary"
                     size="sm"
@@ -755,9 +805,28 @@ export default function Dashboard() {
                     className="flex items-center gap-2 whitespace-nowrap"
                   >
                     <File className="w-4 h-4" />
-                    Download Template (CSV)
+                    Basic Template
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      const link = document.createElement('a')
+                      link.href = '/Asset_Template_Extended.csv'
+                      link.download = 'Asset_Template_Extended.csv'
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                    }}
+                    className="flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <File className="w-4 h-4" />
+                    Extended Template (with impact factors)
                   </Button>
                 </div>
+                <p className="text-xs text-primary-700 border-t border-primary-300 pt-2">
+                  <strong>Extended Template:</strong> Includes optional fields for health impact, cost factors, and carbon footprint. Fill what you know, answer questions for the rest!
+                </p>
               </div>
             </CardBody>
           </Card>
@@ -799,5 +868,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   )
 }
