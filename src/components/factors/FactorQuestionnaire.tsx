@@ -106,10 +106,15 @@ export function FactorQuestionnaire({
             {currentQuestion.options.map((option, idx) => (
               <button
                 key={idx}
-                onClick={() => handleAnswer(option.value)}
-                className="w-full p-4 text-left border-2 border-neutral-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all group"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  handleAnswer(option.value)
+                }}
+                className="w-full p-4 text-left border-2 border-neutral-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all group cursor-pointer active:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-1"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between pointer-events-none">
                   <div>
                     <p className="font-medium text-neutral-900 group-hover:text-primary-600">
                       {option.label}
