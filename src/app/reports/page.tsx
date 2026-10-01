@@ -335,10 +335,72 @@ export default function ReportsPage() {
           </CardBody>
         </Card>
 
+        {/* Master Guide Section */}
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardHeader>
+            <h2 className="text-lg font-semibold text-blue-900">📊 Understanding This Report</h2>
+          </CardHeader>
+          <CardBody>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Probability Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-4 h-4 bg-red-500 rounded"></div>
+                  <h3 className="font-semibold text-neutral-900">Probability</h3>
+                </div>
+                <p className="text-sm text-neutral-700 leading-relaxed">
+                  <strong>Meaning:</strong> Likelihood (0-100%) that an asset will fail or experience critical issues.
+                </p>
+                <p className="text-xs text-neutral-600 mt-2">Higher % = greater risk of equipment breakdown or performance failure.</p>
+              </div>
+
+              {/* Severity Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                  <h3 className="font-semibold text-neutral-900">Severity</h3>
+                </div>
+                <p className="text-sm text-neutral-700 leading-relaxed">
+                  <strong>Meaning:</strong> Impact level (0-20+) of a failure if it occurs.
+                </p>
+                <p className="text-xs text-neutral-600 mt-2">Higher score = greater business disruption, higher replacement cost, or compliance risk.</p>
+              </div>
+
+              {/* Combined Risk Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-4 h-4 bg-gradient-to-r from-red-500 to-orange-500 rounded"></div>
+                  <h3 className="font-semibold text-neutral-900">Combined Risk</h3>
+                </div>
+                <p className="text-sm text-neutral-700 leading-relaxed">
+                  <strong>Meaning:</strong> When both metrics are HIGH, action is urgent.
+                </p>
+                <p className="text-xs text-neutral-600 mt-2">High probability + High severity = critical assets requiring immediate replacement or repair.</p>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <p className="text-xs text-blue-800">
+                <strong>💡 How to use:</strong> Use the charts below to identify trends. When probability and severity both rise together, budget for replacements. When only probability rises but severity is low, consider preventive maintenance instead.
+              </p>
+            </div>
+          </CardBody>
+        </Card>
+
         {/* Health Trend Chart */}
         <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold">Health Status Trend (Last 8 Months)</h2>
+            <div className="mt-3 space-y-2">
+              <p className="text-sm text-neutral-700">
+                <span className="font-semibold">What this shows:</span> The trend of asset health degradation over the past 8 months, showing two key metrics:
+              </p>
+              <div className="ml-4 space-y-2 text-sm text-neutral-600">
+                <p><span className="inline-block w-3 h-3 bg-red-500 rounded mr-2"></span><strong>Probability (Red Line):</strong> Likelihood (0-100%) that a critical issue will occur. Higher percentage = greater risk of equipment failure.</p>
+                <p><span className="inline-block w-3 h-3 bg-orange-500 rounded mr-2"></span><strong>Severity (Orange Line):</strong> Scale of potential impact (0-20+) if an issue occurs. Higher number = more damage or disruption to business.</p>
+              </div>
+              <p className="text-xs text-neutral-500 mt-2">💡 Tip: Both lines trending upward indicates increasing risk and urgency for asset replacement or maintenance.</p>
+            </div>
           </CardHeader>
           <CardBody>
             <ResponsiveContainer width="100%" height={350}>
@@ -388,7 +450,18 @@ export default function ReportsPage() {
         <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold">Issue Probability Forecast (Next 9 Months)</h2>
-            <p className="text-sm text-neutral-600 mt-1">Predicted probability of critical issues and severity levels</p>
+            <div className="mt-3 space-y-2">
+              <p className="text-sm text-neutral-700">
+                <span className="font-semibold">What this shows:</span> Predictive analysis of how asset issues will evolve over the next 9 months, with two critical metrics:
+              </p>
+              <div className="ml-4 space-y-2 text-sm text-neutral-600">
+                <p><span className="inline-block w-3 h-3 bg-red-500 rounded mr-2"></span><strong>Issue Probability (%):</strong> The percentage chance (0-100%) that critical asset failures or performance issues will occur each month. Based on asset age, health status, and historical failure patterns.</p>
+                <p><span className="inline-block w-3 h-3 bg-orange-500 rounded mr-2"></span><strong>Severity Score:</strong> The potential impact level (scale 0-20+) if issues occur. Considers business continuity impact, recovery time, and financial loss.</p>
+              </div>
+              <div className="bg-warning-50 border border-warning-200 rounded p-2 mt-2">
+                <p className="text-xs text-warning-800"><strong>⚠️ Action Required:</strong> When both probability AND severity are rising, it indicates urgent need for preventive maintenance or asset replacement to avoid critical failures.</p>
+              </div>
+            </div>
           </CardHeader>
           <CardBody>
             <ResponsiveContainer width="100%" height={350}>
@@ -440,7 +513,15 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Compliance Score by Asset Type</h2>
-              <p className="text-sm text-neutral-600 mt-1">Trend of compliance scores across different asset types</p>
+              <div className="mt-3 space-y-2">
+                <p className="text-sm text-neutral-700">
+                  <span className="font-semibold">What this shows:</span> How well each type of asset meets regulatory requirements (EPA, GDPR, RoHS, OSHA, ISO 27001).
+                </p>
+                <p className="text-sm text-neutral-600">
+                  <strong>Compliance Score (0-100%):</strong> Higher scores indicate better adherence to regulations. A declining trend suggests assets are falling out of compliance and require attention.
+                </p>
+                <p className="text-xs text-neutral-500">💡 Scores below 70% indicate regulatory risk and potential fines. Priority assets should reach 90%+ compliance.</p>
+              </div>
             </CardHeader>
             <CardBody>
               <div className="w-full overflow-x-auto">
@@ -490,7 +571,17 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Support End Date Distribution</h2>
-              <p className="text-sm text-neutral-600 mt-1">Assets grouped by time until support expiration</p>
+              <div className="mt-3 space-y-2">
+                <p className="text-sm text-neutral-700">
+                  <span className="font-semibold">What this shows:</span> When vendor support ends for assets in your inventory. Assets without active support pose security and compliance risks.
+                </p>
+                <div className="ml-4 space-y-1 text-sm text-neutral-600">
+                  <p><strong>Active Support:</strong> Assets still receiving vendor updates and security patches (lowest risk).</p>
+                  <p><strong>Support Ending Soon:</strong> Assets losing support within 12 months (medium risk - requires planning).</p>
+                  <p><strong>Support Ended:</strong> Assets beyond end-of-life (highest risk - vulnerable to security breaches).</p>
+                </div>
+                <p className="text-xs text-neutral-500 mt-2">⚠️ Assets without support should be prioritized for replacement to maintain security compliance.</p>
+              </div>
             </CardHeader>
             <CardBody>
               <div className="w-full overflow-x-auto">
@@ -516,6 +607,15 @@ export default function ReportsPage() {
         <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold">Replacement Cost Projection (Next 5 Quarters)</h2>
+            <div className="mt-3 space-y-2">
+              <p className="text-sm text-neutral-700">
+                <span className="font-semibold">What this shows:</span> Estimated capital expenditure needed to replace aging or failing assets over the next 15 months.
+              </p>
+              <p className="text-sm text-neutral-600">
+                <strong>Projected Cost per Quarter:</strong> Based on asset age, health status, and remaining useful life. Peaks indicate quarters when multiple critical assets require replacement.
+              </p>
+              <p className="text-xs text-neutral-500 mt-2">💡 Use this forecast for budget planning. Peaks in spending can be smoothed through preventive maintenance or phased replacement strategies.</p>
+            </div>
           </CardHeader>
           <CardBody>
             <ResponsiveContainer width="100%" height={300}>
@@ -543,6 +643,9 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Key Insights</h2>
+              <p className="text-sm text-neutral-600 mt-2">
+                <span className="font-semibold">What this section tells you:</span> Critical observations from all data above. These are the most important trends and patterns affecting your asset portfolio that require your attention.
+              </p>
             </CardHeader>
             <CardBody>
               <ul className="space-y-3">
@@ -577,6 +680,9 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Recommendations</h2>
+              <p className="text-sm text-neutral-600 mt-2">
+                <span className="font-semibold">What this section tells you:</span> Prioritized action items based on the data and insights above. Actions are ranked by urgency (from <span className="inline-block px-2 py-1 bg-danger-50 text-danger-700 text-xs rounded font-medium">CRITICAL</span> to <span className="inline-block px-2 py-1 bg-info-50 text-info-700 text-xs rounded font-medium">INFO</span>).
+              </p>
             </CardHeader>
             <CardBody>
               <ul className="space-y-3">
