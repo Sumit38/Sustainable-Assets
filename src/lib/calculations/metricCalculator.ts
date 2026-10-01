@@ -244,8 +244,15 @@ function calculateHealthImpact(assets: ImportedAsset[]) {
       totalHealthIssuesPredicted += (asset.healthIssuesPerYear || 0) * riskMultiplier
 
       // Track data source for transparency
-      if (!asset.factorDataSources) asset.factorDataSources = {} as any
-      asset.factorDataSources.health = factorResult.healthFactor.source
+      if (!asset.factorDataSources) {
+        asset.factorDataSources = {
+          health: factorResult.healthFactor.source,
+          cost: 'estimated',
+          carbon: 'estimated',
+        }
+      } else {
+        asset.factorDataSources.health = factorResult.healthFactor.source
+      }
     }
   }
 
@@ -302,8 +309,15 @@ function calculateCostImpact(assets: ImportedAsset[]) {
     }
 
     // Track data source for transparency
-    if (!asset.factorDataSources) asset.factorDataSources = {} as any
-    asset.factorDataSources.cost = factorResult.costFactor.source
+    if (!asset.factorDataSources) {
+      asset.factorDataSources = {
+        health: 'estimated',
+        cost: factorResult.costFactor.source,
+        carbon: 'estimated',
+      }
+    } else {
+      asset.factorDataSources.cost = factorResult.costFactor.source
+    }
   }
 
   const potentialSavings = totalMaintenanceCosts + totalDowntimeCost
@@ -347,8 +361,15 @@ function calculateCarbonImpact(assets: ImportedAsset[]) {
     }
 
     // Track data source for transparency
-    if (!asset.factorDataSources) asset.factorDataSources = {} as any
-    asset.factorDataSources.carbon = factorResult.carbonFactor.source
+    if (!asset.factorDataSources) {
+      asset.factorDataSources = {
+        health: 'estimated',
+        cost: 'estimated',
+        carbon: factorResult.carbonFactor.source,
+      }
+    } else {
+      asset.factorDataSources.carbon = factorResult.carbonFactor.source
+    }
   }
 
   // Estimate scope 2 and 3 (approximately 30% and 40% of operational emissions)
