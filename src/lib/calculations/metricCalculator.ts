@@ -39,16 +39,6 @@ export interface ImportedAsset {
   replacementCost?: number
   annualCO2e?: number
   powerWatts?: number
-
-  // User answers from questionnaire (if provided)
-  questionnaireAnswers?: Record<string, number>
-
-  // Data source transparency
-  factorDataSources?: {
-    health: DataSource
-    cost: DataSource
-    carbon: DataSource
-  }
 }
 
 export interface CalculatedMetrics {
