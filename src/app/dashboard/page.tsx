@@ -13,7 +13,7 @@ import { DashboardMetrics, AssetWithHealthStatus, AssetTypeCount, AssetType, Sup
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Package, AlertTriangle, TrendingUp, Shield, DollarSign, Users, Leaf, Heart, Zap, Download, Upload, FileText, Bell, File, Check, AlertCircle, Battery, CheckCircle } from 'lucide-react'
 import { exportDashboardToCSV, exportDashboardToPDF } from '@/lib/export/dashboardExport'
-import { validateAndProcessCSV } from '@/lib/import/csvProcessor'
+import { validateAndProcessCSV, ExtendedImportedAsset } from '@/lib/import/csvProcessor'
 import { calculateMetrics, CalculatedMetrics } from '@/lib/calculations/metricCalculator'
 import { ImportedAsset } from '@/lib/calculations/metricCalculator'
 import { useDashboard } from '@/lib/context/dashboardContext'
