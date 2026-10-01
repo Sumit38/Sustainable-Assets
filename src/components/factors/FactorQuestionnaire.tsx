@@ -30,7 +30,9 @@ export function FactorQuestionnaire({
   }
 
   const currentQuestion = questions[currentQuestionIndex]
-  const progress = Math.round(((currentQuestionIndex + 1) / questions.length) * 100)
+  // Progress based on answered questions, not viewed questions
+  const answeredCount = Object.keys(answers).length
+  const progress = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0
 
   const handleAnswer = (value: number) => {
     const newAnswers = {
@@ -156,11 +158,13 @@ export function FactorQuestionnaire({
               </Button>
               <Button
                 variant="primary"
-                onClick={() => {
-                  // Complete without answering last question
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
                   onComplete(answers)
                 }}
-                className="flex-1"
+                className="flex-1 cursor-pointer"
+                type="button"
               >
                 Complete Survey
               </Button>

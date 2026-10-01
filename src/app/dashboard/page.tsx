@@ -322,49 +322,63 @@ export default function Dashboard() {
         )}
 
         {/* DLE Impact KPI */}
-        <div className="border-t-4 border-primary-400 pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <BusinessKPI
-              label="Recoverable Lithium"
-              value="45.2"
-              unit="kg"
-              icon={<Battery className="w-6 h-6" />}
-              variant="positive"
-              description="From DLE-suitable assets in inventory"
-              calculation="Sum of estimated lithium content from all DLE-suitable assets (Laptops, Tablets, Smartphones, UPS Systems, EVs). Calculated as: Sum of (asset lithium content min-max average × quantity) from materials database."
-            />
-            <BusinessKPI
-              label="DLE Recovery Value"
-              value="$1,240"
-              icon={<DollarSign className="w-6 h-6" />}
-              variant="positive"
-              description="Current market value (est.)"
-              calculation="Total estimated monetary value from Direct Lithium Extraction. Calculated as: Sum of (asset recovery value min-max average) for all DLE-suitable assets from materials database. Based on current lithium market prices."
-            />
-            <BusinessKPI
-              label="CO₂e Savings (DLE)"
-              value="450"
-              unit="kg"
-              icon={<Leaf className="w-6 h-6" />}
-              variant="positive"
-              description="vs. primary lithium extraction"
-              calculation="Carbon emissions prevented by using DLE instead of primary lithium mining. Calculated as: Sum of (asset co2eSavingsVsPrimaryMining) for all DLE-suitable assets. DLE reduces mining emissions by ~95% vs. traditional extraction."
-            />
-            <BusinessKPI
-              label="DLE Suitable Assets"
-              value="23"
-              unit="units"
-              icon={<CheckCircle className="w-6 h-6" />}
-              variant="positive"
-              description="Ready for DLE processing pathway"
-              calculation="Count of assets with lithium batteries suitable for Direct Lithium Extraction. Includes: Laptops, Tablets, Smartphones, UPS Systems, Electric Vehicles. Calculated as: Count of assets where isDLESuitable = true."
-            />
+        {importedAssets.length > 0 ? (
+          <div className="border-t-4 border-primary-400 pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <BusinessKPI
+                label="Recoverable Lithium"
+                value="45.2"
+                unit="kg"
+                icon={<Battery className="w-6 h-6" />}
+                variant="positive"
+                description="From DLE-suitable assets in inventory"
+                calculation="Sum of estimated lithium content from all DLE-suitable assets (Laptops, Tablets, Smartphones, UPS Systems, EVs). Calculated as: Sum of (asset lithium content min-max average × quantity) from materials database."
+              />
+              <BusinessKPI
+                label="DLE Recovery Value"
+                value="$1,240"
+                icon={<DollarSign className="w-6 h-6" />}
+                variant="positive"
+                description="Current market value (est.)"
+                calculation="Total estimated monetary value from Direct Lithium Extraction. Calculated as: Sum of (asset recovery value min-max average) for all DLE-suitable assets from materials database. Based on current lithium market prices."
+              />
+              <BusinessKPI
+                label="CO₂e Savings (DLE)"
+                value="450"
+                unit="kg"
+                icon={<Leaf className="w-6 h-6" />}
+                variant="positive"
+                description="vs. primary lithium extraction"
+                calculation="Carbon emissions prevented by using DLE instead of primary lithium mining. Calculated as: Sum of (asset co2eSavingsVsPrimaryMining) for all DLE-suitable assets. DLE reduces mining emissions by ~95% vs. traditional extraction."
+              />
+              <BusinessKPI
+                label="DLE Suitable Assets"
+                value="23"
+                unit="units"
+                icon={<CheckCircle className="w-6 h-6" />}
+                variant="positive"
+                description="Ready for DLE processing pathway"
+                calculation="Count of assets with lithium batteries suitable for Direct Lithium Extraction. Includes: Laptops, Tablets, Smartphones, UPS Systems, Electric Vehicles. Calculated as: Count of assets where isDLESuitable = true."
+              />
+            </div>
+            <div className="mt-2 text-xs text-neutral-600 flex items-center gap-2">
+              <Battery className="w-4 h-4 text-primary-600" />
+              <a href="/dle" className="text-primary-600 hover:underline font-semibold">View full DLE Analytics →</a>
+            </div>
           </div>
-          <div className="mt-2 text-xs text-neutral-600 flex items-center gap-2">
-            <Battery className="w-4 h-4 text-primary-600" />
-            <a href="/dle" className="text-primary-600 hover:underline font-semibold">View full DLE Analytics →</a>
+        ) : (
+          <div className="border-t-4 border-primary-400 pt-6">
+            <Card>
+              <CardBody className="flex items-center justify-between p-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">♻️ DLE Recovery Analytics</h3>
+                  <p className="text-sm text-neutral-600">Import asset data to calculate Direct Lithium Extraction opportunities and recovery value</p>
+                </div>
+                <Battery className="w-12 h-12 text-primary-500 flex-shrink-0" />
+              </CardBody>
+            </Card>
           </div>
-        </div>
+        )}
 
         {/* Global Compliance & Regulatory Risk Metrics */}
         {calculatedMetrics ? (
