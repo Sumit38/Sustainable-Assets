@@ -13,8 +13,7 @@ export async function saveAssetsToDatabase(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     if (!supabase) {
-      console.warn('Supabase not configured - assets will only be saved to localStorage')
-      return { success: true }
+      return { success: false, error: 'Database is not configured' }
     }
 
     // Delete existing assets for this user first
@@ -24,7 +23,8 @@ export async function saveAssetsToDatabase(
       .eq('user_id', userId)
 
     if (deleteError) {
-      console.warn('Failed to delete old assets:', deleteError)
+      console.error('Failed to delete old assets:', deleteError)
+      return { success: false, error: deleteError.message }
     }
 
     // Insert new assets
@@ -61,14 +61,14 @@ export async function saveAssetsToDatabase(
       )
 
     if (error) {
-      console.warn('Failed to insert assets to database:', error.message)
-      return { success: true }
+      console.error('Failed to insert assets to database:', error)
+      return { success: false, error: error.message }
     }
 
     return { success: true }
   } catch (err) {
-    console.warn('Supabase operation failed, falling back to localStorage:', err)
-    return { success: true }
+    console.error('Supabase operation failed:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown database error' }
   }
 }
 

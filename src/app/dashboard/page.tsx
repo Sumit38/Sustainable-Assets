@@ -147,9 +147,7 @@ export default function Dashboard() {
         return
       }
 
-      // Import assets directly without questionnaire - user has full control
-      setImportSuccess(`Successfully imported ${result.assetsImported} assets!`)
-      completeImport(result.assets as ExtendedImportedAsset[])
+      await completeImport(result.assets as ExtendedImportedAsset[])
     } catch (err) {
       setImportError(`Upload error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
@@ -162,10 +160,15 @@ export default function Dashboard() {
       // Calculate metrics from imported assets
       const metrics = calculateMetrics(assets)
 
-      // Save to context (persists to localStorage)
-      setDashboardData(assets, metrics)
+      const saveResult = await setDashboardData(assets, metrics)
+      if (!saveResult.success) {
+        setImportError(
+          `Data is shown for this session but was NOT saved to the database, so it will disappear after you log out.\n\nReason: ${saveResult.error}`
+        )
+        return
+      }
 
-      setImportSuccess(`Successfully imported ${assets.length} assets! Metrics calculated.`)
+      setImportSuccess(`Successfully imported and saved ${assets.length} assets! Metrics calculated.`)
 
       // Reload dashboard with new metrics
       await loadDashboardMetrics()

@@ -8,7 +8,7 @@ import { loadAssetsFromDatabase, saveAssetsToDatabase } from '@/lib/supabase/ass
 interface DashboardContextType {
   importedAssets: ImportedAsset[]
   calculatedMetrics: CalculatedMetrics | null
-  setDashboardData: (assets: ImportedAsset[], metrics: CalculatedMetrics) => void
+  setDashboardData: (assets: ImportedAsset[], metrics: CalculatedMetrics) => Promise<{ success: boolean; error?: string }>
   clearDashboardData: () => void
   loadDashboardData: () => void
 }
@@ -73,16 +73,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setImportedAssets(assets)
     setCalculatedMetrics(metrics)
 
-    // Save to Supabase if user is authenticated
+    // Authenticated users persist only to Supabase; localStorage is cleared on their next load anyway
     if (user?.id) {
-      try {
-        await saveAssetsToDatabase(user.id, assets)
-      } catch (error) {
-        console.error('Failed to save assets to database:', error)
-      }
+      return saveAssetsToDatabase(user.id, assets)
     }
 
-    // Also persist to localStorage as fallback
     try {
       localStorage.setItem(
         'dashboardData',
@@ -91,6 +86,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to save dashboard data to localStorage:', error)
     }
+    return { success: true }
   }
 
   const clearDashboardData = async () => {
