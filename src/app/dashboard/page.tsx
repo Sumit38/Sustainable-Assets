@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { InfoTip } from '@/components/common/InfoTip'
 import { StoryCard } from '@/components/dashboard/StoryCard'
@@ -19,6 +19,8 @@ import {
   computeInsights,
   filterAssets,
   filterOptions,
+  filtersFromQuery,
+  filtersToQuery,
   formatMoney,
   formatNumber,
 } from '@/lib/calculations/dashboardInsights'
@@ -66,6 +68,10 @@ export default function Dashboard() {
   const [uploading, setUploading] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState<string | null>(null)
+
+  useEffect(() => {
+    setFilters(filtersFromQuery(window.location.search))
+  }, [])
 
   const options = useMemo(() => filterOptions(importedAssets), [importedAssets])
   const filtered = useMemo(() => filterAssets(importedAssets, filters), [importedAssets, filters])
@@ -141,6 +147,7 @@ export default function Dashboard() {
   }
 
   const { compliance, health, sustainability, lithium, charts } = insights
+  const query = filtersToQuery(filters)
   const healthData = HEALTH_SLICES.map(s => ({ name: s.name, value: charts.health[s.key], color: s.color })).filter(d => d.value > 0)
   const maxRegion = Math.max(1, ...compliance.regions.map(r => r.total))
   const maxType = Math.max(1, ...charts.byType.map(t => t.total))
@@ -190,22 +197,25 @@ export default function Dashboard() {
               <StoryCard
                 step={1}
                 title="Compliance risk"
-                value={formatNumber(compliance.pastEolCount)}
+                value={formatNumber(compliance.nonCompliantCount)}
                 unit="assets"
-                caption="still in use after end of support"
+                caption={`non-compliant (score below ${COMPLIANCE_THRESHOLD})`}
                 icon={<ShieldAlert className="w-5 h-5" />}
                 tone="danger"
-                href="/alerts"
-                footnote={`${formatMoney(compliance.fineExposure)} potential fines`}
+                href={`/compliance${query}`}
+                footnote={`${compliance.pastEolCount} past end of support · ${formatMoney(compliance.fineExposure)} potential fines`}
                 info={
                   <>
-                    Assets whose <em>Last Date of Support</em> has passed, or that are marked end-of-life, but are still in
-                    use. Unsupported assets no longer get safety or security fixes, which is how compliance breaches start.
+                    <strong>Non-compliant:</strong> assets whose <em>Compliance Score</em> in your file is below{' '}
+                    {COMPLIANCE_THRESHOLD}. This is the same figure as “Assets Violating Standards” in the Score Library.
                     <br />
                     <br />
-                    <strong>Potential fines:</strong> {compliance.nonCompliantCount} assets score below {COMPLIANCE_THRESHOLD}.
-                    Each is counted once for every regulation that applies to its type and region, multiplied by that
-                    regulation&apos;s published fine per violation.
+                    <strong>Past end of support:</strong> assets still in use after their <em>Last Date of Support</em>.
+                    They no longer get safety or security fixes.
+                    <br />
+                    <br />
+                    <strong>Potential fines:</strong> each non-compliant asset is counted once for every regulation that
+                    applies to its type and region, multiplied by that regulation&apos;s published fine per violation.
                   </>
                 }
               />

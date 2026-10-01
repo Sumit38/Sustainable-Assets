@@ -23,6 +23,23 @@ export const EMPTY_FILTERS: DashboardFilters = {
   department: ALL,
 }
 
+export function filtersToQuery(f: DashboardFilters): string {
+  const params = new URLSearchParams()
+  for (const [k, v] of Object.entries(f)) if (v !== ALL) params.set(k, v)
+  const s = params.toString()
+  return s ? `?${s}` : ''
+}
+
+export function filtersFromQuery(search: string): DashboardFilters {
+  const params = new URLSearchParams(search)
+  return {
+    region: params.get('region') ?? ALL,
+    standard: params.get('standard') ?? ALL,
+    assetType: params.get('assetType') ?? ALL,
+    department: params.get('department') ?? ALL,
+  }
+}
+
 export const COMPLIANCE_THRESHOLD = 80
 
 type HealthBucket = 'healthy' | 'at-risk' | 'critical' | 'end-of-life'

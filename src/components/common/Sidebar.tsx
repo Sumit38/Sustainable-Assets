@@ -16,12 +16,14 @@ import {
   Leaf,
   CheckCircle2,
   Battery,
+  ShieldAlert,
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Welcome', href: '/welcome', icon: BarChart3 },
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Assets', href: '/assets', icon: Package },
+  { name: 'Compliance', href: '/compliance', icon: ShieldAlert },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Sustainability', href: '/sustainability', icon: Leaf },
