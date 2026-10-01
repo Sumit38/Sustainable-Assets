@@ -21,23 +21,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false)
   const { user } = useAuth()
 
-  // Load data from Supabase on user auth or from localStorage as fallback
+  // Load data from Supabase on user auth or from localStorage only for unauthenticated users
   useEffect(() => {
     const loadData = async () => {
       try {
-        // If user is authenticated, load from Supabase
+        // If user is authenticated, ONLY load from Supabase (not localStorage to prevent data leakage)
         if (user?.id) {
           const dbAssets = await loadAssetsFromDatabase(user.id)
-          if (dbAssets.length > 0) {
-            setImportedAssets(dbAssets)
-            // Clear local storage if we have database data
-            localStorage.removeItem('dashboardData')
-            setIsLoaded(true)
-            return
-          }
+          setImportedAssets(dbAssets)
+          // Always clear localStorage when user is authenticated to prevent data mixing
+          localStorage.removeItem('dashboardData')
+          setIsLoaded(true)
+          return
         }
 
-        // Fallback to localStorage if no user or no database data
+        // Only load localStorage if user is NOT authenticated (for demo/trial mode)
         const stored = localStorage.getItem('dashboardData')
         if (stored) {
           const { assets, metrics } = JSON.parse(stored)
@@ -46,15 +44,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error)
-        // Try localStorage as final fallback
-        const stored = localStorage.getItem('dashboardData')
-        if (stored) {
-          try {
-            const { assets, metrics } = JSON.parse(stored)
-            setImportedAssets(assets)
-            setCalculatedMetrics(metrics)
-          } catch (e) {
-            console.error('Failed to load from localStorage:', e)
+        // If user is authenticated, don't fallback to localStorage - that would leak data
+        if (!user?.id) {
+          // Only fallback to localStorage if NO authenticated user
+          const stored = localStorage.getItem('dashboardData')
+          if (stored) {
+            try {
+              const { assets, metrics } = JSON.parse(stored)
+              setImportedAssets(assets)
+              setCalculatedMetrics(metrics)
+            } catch (e) {
+              console.error('Failed to load from localStorage:', e)
+            }
           }
         }
       } finally {
@@ -110,16 +111,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (user?.id) {
       try {
         const dbAssets = await loadAssetsFromDatabase(user.id)
-        if (dbAssets.length > 0) {
-          setImportedAssets(dbAssets)
-          return
-        }
+        setImportedAssets(dbAssets)
+        return
       } catch (error) {
         console.error('Failed to load from database:', error)
+        // Don't fallback to localStorage for authenticated users - prevents data leakage
+        return
       }
     }
 
-    // Fallback to localStorage
+    // Only load localStorage if user is NOT authenticated
     const stored = localStorage.getItem('dashboardData')
     if (stored) {
       try {

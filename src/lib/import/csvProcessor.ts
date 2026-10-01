@@ -72,6 +72,15 @@ const OPTIONAL_FIELDS = [
   'Product Parts',
   'Potential Health Impact',
   'Risk Level',
+  'Employees Affected',
+  'Health Issues Per Year',
+  'Annual Maintenance Cost',
+  'Downtime Hours Per Failure',
+  'Downtime Cost Per Hour',
+  'Replacement Cost',
+  'Annual CO2e',
+  'Power Watts',
+  'Notes',
 ]
 
 export function parseCSV(csvContent: string): string[][] {
