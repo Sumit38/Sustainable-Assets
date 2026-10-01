@@ -56,9 +56,9 @@ export function FactorQuestionnaire({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-2xl mx-4">
-        <CardHeader className="bg-primary-50 border-b border-primary-200">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <CardHeader className="bg-primary-50 border-b border-primary-200 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-lg font-semibold text-neutral-900">
@@ -85,7 +85,7 @@ export function FactorQuestionnaire({
           </div>
         </CardHeader>
 
-        <CardBody className="space-y-6 py-8">
+        <CardBody className="space-y-6 py-8 overflow-y-auto flex-1">
           {/* Question */}
           <div>
             <div className="flex items-start gap-3 mb-2">
@@ -129,17 +129,17 @@ export function FactorQuestionnaire({
               factors for your assets. You can always update this data later.
             </p>
           </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button variant="secondary" onClick={handleSkip} className="flex-1">
-              Skip This Question
-            </Button>
-            <Button variant="secondary" onClick={onSkip} className="flex-1">
-              Skip All
-            </Button>
-          </div>
         </CardBody>
+
+        {/* Sticky Buttons Footer */}
+        <div className="border-t border-neutral-200 bg-white p-4 flex gap-3 flex-shrink-0">
+          <Button variant="secondary" onClick={handleSkip} className="flex-1">
+            Skip This Question
+          </Button>
+          <Button variant="secondary" onClick={onSkip} className="flex-1">
+            Skip All
+          </Button>
+        </div>
       </Card>
     </div>
   )
