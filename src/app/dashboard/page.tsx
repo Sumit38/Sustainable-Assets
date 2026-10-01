@@ -211,7 +211,7 @@ export default function Dashboard() {
               icon={<DollarSign className="w-6 h-6" />}
               variant="positive"
               description="From predictive maintenance & avoiding failures"
-              calculation="Estimated cost savings from preventing asset failures through predictive maintenance. Calculated as: (Critical assets × failure cost estimate) + (At-risk assets × prevention cost)"
+              calculation="Savings = Maintenance Costs + (Downtime Costs × Failure Risk), where Downtime Cost = Hours Per Failure × Cost Per Hour × Failure Probability. Maintenance costs vary by asset type. Failure probability ranges from 0 (healthy) to 1.0 (end-of-life). Includes emergency repair avoidance."
             />
             <BusinessKPI
               label="Employees at Health Risk"
@@ -219,7 +219,7 @@ export default function Dashboard() {
               icon={<Heart className="w-6 h-6" />}
               variant="negative"
               description="From aging/poor condition assets"
-              calculation="Number of employees potentially exposed to health risks from faulty equipment, poor ergonomics, or non-compliant assets. Estimated from critical + end-of-life assets in office areas."
+              calculation="Health Risk = Σ(Asset Health Factor × Risk Multiplier), where: Healthy = Multiplier 0, At-Risk = Multiplier 1.5, Critical = Multiplier 2.5, End-of-Life = Multiplier 4.0. Factors include ergonomic hazards, predicted health issues per year, and number of affected employees."
             />
             <BusinessKPI
               label="Global Pollution Index"
@@ -243,7 +243,7 @@ export default function Dashboard() {
               icon={<AlertTriangle className="w-6 h-6" />}
               variant={calculatedMetrics.businessContinuityRisk === 'Critical' ? 'negative' : calculatedMetrics.businessContinuityRisk === 'High' ? 'warning' : 'positive'}
               description="Based on critical and end-of-life assets"
-              calculation="Risk assessment for business operations continuity. Critical if >20% assets are critical/EOL, High if 10-20%, Low if <10%. Accounts for asset criticality and backup availability."
+              calculation="Risk Level based on Critical/EOL Asset Percentage: Critical if > 30%, High if > 20%, Medium if > 10%, Low if ≤ 10%. Evaluates exposure to sudden asset failures and informs business continuity planning."
             />
           </div>
         ) : (
@@ -339,7 +339,7 @@ export default function Dashboard() {
               icon={<AlertTriangle className="w-6 h-6" />}
               variant="negative"
               description={calculatedMetrics.globalComplianceRiskScore > 7 ? 'Critical - Immediate action required' : 'Requires attention'}
-              calculation="Composite compliance risk assessment (0-10 scale). Calculated as: (Violation rate × 3) + (Fine exposure severity × 2) + (Regional regulatory gaps × 2) + (Asset age factor × 3). Higher = greater risk. 8+ = Critical."
+              calculation="Composite compliance assessment (0-10 scale). Violation Rate = (Assets Non-Compliant / Total Assets) × 100. Fine Exposure = Σ(Violation Count × Fine Per Violation). Standards tracked: GDPR, HIPAA, ISO 27001, PCI DSS, SOC 2, NIST, EPA, OSHA, RoHS, CE. Region-specific standards applied (Europe: GDPR/RoHS; North America: EPA/OSHA; Asia Pacific: Local regs). Higher score = greater risk."
             />
           </div>
         ) : (
