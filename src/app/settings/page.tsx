@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '@/lib/auth/authContext'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
@@ -8,6 +9,7 @@ import { Badge } from '@/components/common/Badge'
 import { Save, User, Bell, Lock, Database } from 'lucide-react'
 
 export default function SettingsPage() {
+  const { user } = useAuth()
   const [settings, setSettings] = useState({
     appName: 'Asset Health System',
     organizationName: 'Your Organization',
@@ -21,6 +23,17 @@ export default function SettingsPage() {
     backupEnabled: true,
     backupFrequency: 'daily',
   })
+
+  useEffect(() => {
+    if (user) {
+      const userMetadata = user.user_metadata || {}
+      setSettings(prev => ({
+        ...prev,
+        email: user.email || prev.email,
+        phone: userMetadata.phone || prev.phone,
+      }))
+    }
+  }, [user])
 
   const [saved, setSaved] = useState(false)
 

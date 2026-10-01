@@ -39,7 +39,7 @@ export default function SignUpPage() {
         throw new Error('Please enter a valid phone number')
       }
 
-      await signUp(email, password, fullName)
+      await signUp(email, password, fullName, phone)
       setSuccess(true)
       setTimeout(() => {
         router.push('/auth/signin')
