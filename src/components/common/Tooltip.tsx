@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, ReactNode } from 'react'
+import React, { useState, ReactNode, useRef } from 'react'
 import { Info } from 'lucide-react'
 
 interface TooltipProps {
@@ -10,68 +10,42 @@ interface TooltipProps {
   icon?: boolean
 }
 
-export function Tooltip({ content, children, side = 'top', icon = true }: TooltipProps) {
+export function Tooltip({ content, children, side = 'right', icon = true }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
-  const [position, setPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
+  const triggerRef = useRef<HTMLDivElement>(null)
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    let top = rect.top - 10
-    let left = rect.left + rect.width / 2
-
-    // Adjust position based on side
-    if (side === 'bottom') {
-      top = rect.bottom + 10
-    } else if (side === 'left') {
-      left = rect.left - 10
-      top = rect.top + rect.height / 2
-    } else if (side === 'right') {
-      left = rect.right + 10
-      top = rect.top + rect.height / 2
+  const getSideClasses = () => {
+    switch (side) {
+      case 'top':
+        return 'bottom-full mb-2 left-1/2 -translate-x-1/2'
+      case 'bottom':
+        return 'top-full mt-2 left-1/2 -translate-x-1/2'
+      case 'left':
+        return 'right-full mr-2 top-1/2 -translate-y-1/2'
+      case 'right':
+        return 'left-full ml-2 top-1/2 -translate-y-1/2'
+      default:
+        return 'left-full ml-2 top-1/2 -translate-y-1/2'
     }
-
-    setPosition({ top, left })
-    setIsVisible(true)
   }
 
   return (
     <div className="relative inline-block">
       <div
-        onMouseEnter={handleMouseEnter}
+        ref={triggerRef}
+        onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
         className="cursor-help inline-flex items-center gap-1"
       >
         {children}
-        {icon && !children && <Info className="w-4 h-4 text-neutral-400 hover:text-neutral-600" />}
+        {icon && !children && <Info className="w-4 h-4 text-neutral-400 hover:text-neutral-600 transition-colors" />}
       </div>
 
       {isVisible && (
         <div
-          className="fixed z-50 bg-neutral-900 text-white text-xs rounded-lg px-3 py-2 max-w-xs shadow-lg pointer-events-none"
-          style={{
-            top: `${position.top}px`,
-            left: `${position.left}px`,
-            transform:
-              side === 'top'
-                ? 'translate(-50%, -100%)'
-                : side === 'bottom'
-                  ? 'translate(-50%, 0)'
-                  : side === 'left'
-                    ? 'translate(-100%, -50%)'
-                    : 'translate(0, -50%)',
-          }}
+          className={`absolute z-50 ${getSideClasses()} bg-neutral-900 text-white text-xs rounded-lg px-3 py-2 max-w-xs shadow-lg whitespace-normal break-words pointer-events-none`}
         >
-          <div className="break-words">{content}</div>
-          {/* Arrow indicator */}
-          <div
-            className="absolute w-2 h-2 bg-neutral-900 rotate-45"
-            style={{
-              ...(side === 'top' && { bottom: '-4px', left: '50%', transform: 'translateX(-50%)' }),
-              ...(side === 'bottom' && { top: '-4px', left: '50%', transform: 'translateX(-50%)' }),
-              ...(side === 'left' && { right: '-4px', top: '50%', transform: 'translateY(-50%)' }),
-              ...(side === 'right' && { left: '-4px', top: '50%', transform: 'translateY(-50%)' }),
-            }}
-          />
+          {content}
         </div>
       )}
     </div>
