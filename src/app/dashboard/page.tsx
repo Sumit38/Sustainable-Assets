@@ -13,12 +13,11 @@ import { DashboardMetrics, AssetWithHealthStatus, AssetTypeCount, AssetType, Sup
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Package, AlertTriangle, TrendingUp, Shield, DollarSign, Users, Leaf, Heart, Zap, Download, Upload, FileText, Bell, File, Check, AlertCircle, Battery, CheckCircle } from 'lucide-react'
 import { exportDashboardToCSV, exportDashboardToPDF } from '@/lib/export/dashboardExport'
-import { validateAndProcessCSV, ExtendedImportedAsset } from '@/lib/import/csvProcessor'
+import { validateAndProcessCSV } from '@/lib/import/csvProcessor'
 import { calculateMetrics, CalculatedMetrics } from '@/lib/calculations/metricCalculator'
 import { ImportedAsset } from '@/lib/calculations/metricCalculator'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { getCalculationDescription } from '@/lib/data/calculationDescriptions'
-import { CSVImportWithQuestionnaire } from '@/components/import/CSVImportWithQuestionnaire'
 
 const HEALTH_COLORS = {
   healthy: '#22c55e',
@@ -34,8 +33,6 @@ export default function Dashboard() {
   const [importError, setImportError] = useState<string | null>(null)
   const [importSuccess, setImportSuccess] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false)
-  const [pendingAssets, setPendingAssets] = useState<ExtendedImportedAsset[] | null>(null)
   const { importedAssets, calculatedMetrics, setDashboardData, loadDashboardData } = useDashboard()
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
@@ -150,25 +147,9 @@ export default function Dashboard() {
         return
       }
 
-      // Check if questionnaire is needed for missing factor fields
-      const assetsNeedingFactors = result.assets.filter(asset => {
-        const hasEmployeeData = asset.employeesAffected !== undefined
-        const hasHealthData = asset.healthIssuesPerYear !== undefined
-        const hasCostData = asset.annualMaintenanceCost !== undefined
-        const hasCarbonData = asset.annualCO2e !== undefined || asset.powerWatts !== undefined
-
-        return !hasEmployeeData || !hasHealthData || !hasCostData || !hasCarbonData
-      })
-
-      if (assetsNeedingFactors.length > 0) {
-        // Show questionnaire for assets with missing fields
-        setPendingAssets(result.assets)
-        setShowQuestionnaire(true)
-        setImportSuccess(`${result.assetsImported} assets loaded. ${assetsNeedingFactors.length} assets need additional information.`)
-      } else {
-        // All assets have factor data - calculate metrics directly
-        completeImport(result.assets as ExtendedImportedAsset[])
-      }
+      // Import assets directly without questionnaire - user has full control
+      setImportSuccess(`Successfully imported ${result.assetsImported} assets!`)
+      completeImport(result.assets as ExtendedImportedAsset[])
     } catch (err) {
       setImportError(`Upload error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
@@ -198,18 +179,6 @@ export default function Dashboard() {
     }
   }
 
-  function handleQuestionnaireComplete(assetsWithAnswers: ExtendedImportedAsset[]) {
-    setShowQuestionnaire(false)
-    setPendingAssets(null)
-    completeImport(assetsWithAnswers)
-  }
-
-  function handleQuestionnaireSkip() {
-    setShowQuestionnaire(false)
-    if (pendingAssets) {
-      completeImport(pendingAssets)
-    }
-  }
 
   if (loading) {
     return (
@@ -239,15 +208,7 @@ export default function Dashboard() {
   ]
 
   return (
-    <>
-      {showQuestionnaire && pendingAssets && (
-        <CSVImportWithQuestionnaire
-          assets={pendingAssets}
-          onComplete={handleQuestionnaireComplete}
-          onSkip={handleQuestionnaireSkip}
-        />
-      )}
-      <div className="w-full">
+    <div className="w-full">
       <PageHeader title="Dashboard" description="Real-time asset health overview" alerts={metrics.pendingAlerts} showHomeButton={true} homeHref="/welcome" />
 
       <div className="p-6 space-y-6">
@@ -882,6 +843,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-    </>
   )
 }
