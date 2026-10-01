@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { ImportedAsset, CalculatedMetrics } from '@/lib/calculations/metricCalculator'
+import { ImportedAsset, CalculatedMetrics, calculateMetrics } from '@/lib/calculations/metricCalculator'
 import { useAuth } from '@/lib/auth/authContext'
 import { loadAssetsFromDatabase, saveAssetsToDatabase } from '@/lib/supabase/assetService'
 
@@ -29,6 +29,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         if (user?.id) {
           const dbAssets = await loadAssetsFromDatabase(user.id)
           setImportedAssets(dbAssets)
+          // Calculate metrics from loaded assets
+          const metrics = calculateMetrics(dbAssets)
+          setCalculatedMetrics(metrics)
           // Always clear localStorage when user is authenticated to prevent data mixing
           localStorage.removeItem('dashboardData')
           setIsLoaded(true)
@@ -112,6 +115,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       try {
         const dbAssets = await loadAssetsFromDatabase(user.id)
         setImportedAssets(dbAssets)
+        // Calculate metrics from loaded assets
+        const metrics = calculateMetrics(dbAssets)
+        setCalculatedMetrics(metrics)
         return
       } catch (error) {
         console.error('Failed to load from database:', error)
