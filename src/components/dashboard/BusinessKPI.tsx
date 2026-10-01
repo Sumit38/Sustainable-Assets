@@ -1,9 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardBody } from '@/components/common/Card'
-import { Tooltip } from '@/components/common/Tooltip'
-import { TrendingUp, TrendingDown, DollarSign, Users, Leaf, AlertTriangle } from 'lucide-react'
+import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, DollarSign, Users, Leaf, AlertTriangle } from 'lucide-react'
 
 interface BusinessKPIProps {
   label: string
@@ -36,6 +35,7 @@ export function BusinessKPI({
   submetric,
   calculation,
 }: BusinessKPIProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const variantStyles = {
     positive: 'bg-success-50 border-success-200',
     negative: 'bg-danger-50 border-danger-200',
@@ -82,11 +82,31 @@ export function BusinessKPI({
           )}
         </div>
 
-        <div className="flex items-center gap-2 mb-2">
+        {/* Header: Label + Show More Button */}
+        <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-medium text-neutral-600">{label}</p>
-          {calculation && <Tooltip content={calculation} side="right" />}
+          {calculation && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 rounded transition-colors"
+              title={isExpanded ? 'Show less' : 'Show calculation details'}
+            >
+              {isExpanded ? (
+                <>
+                  Less
+                  <ChevronUp className="w-3 h-3" />
+                </>
+              ) : (
+                <>
+                  More
+                  <ChevronDown className="w-3 h-3" />
+                </>
+              )}
+            </button>
+          )}
         </div>
 
+        {/* Metric Value */}
         <div className="mb-3">
           <div className={`text-3xl font-bold ${valueStyles[variant]}`}>
             {value ?? '0'}
@@ -94,6 +114,7 @@ export function BusinessKPI({
           </div>
         </div>
 
+        {/* Submetric */}
         {submetric && (
           <div className="mb-3 p-2 bg-white bg-opacity-60 rounded">
             <p className="text-xs text-neutral-600">{submetric.label}</p>
@@ -101,11 +122,25 @@ export function BusinessKPI({
           </div>
         )}
 
+        {/* Description */}
         {description && <p className="text-xs text-neutral-600 leading-relaxed">{description}</p>}
 
+        {/* Zero Note */}
         {value === 0 && zeroNote && (
           <div className="mt-3 p-2 bg-warning-50 border border-warning-200 rounded text-xs text-warning-800">
             ⚠️ {zeroNote}
+          </div>
+        )}
+
+        {/* Expanded Calculation Details */}
+        {isExpanded && calculation && (
+          <div className="mt-4 pt-4 border-t border-neutral-200">
+            <div className="bg-neutral-50 rounded p-3">
+              <p className="text-xs font-semibold text-neutral-700 mb-2">Calculation Logic:</p>
+              <div className="text-xs text-neutral-700 leading-relaxed space-y-1">
+                {typeof calculation === 'string' ? <p>{calculation}</p> : calculation}
+              </div>
+            </div>
           </div>
         )}
       </CardBody>
