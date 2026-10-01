@@ -315,7 +315,7 @@ export function calculateComplianceExposure(
     affectedUnits?: number // For standards like RoHS, CE that scale by units
   }>
 ): {
-  regularoyFines: number
+  regulatoryFines: number
   businessImpact: number
   total: number
 } {
