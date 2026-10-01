@@ -201,6 +201,19 @@ export default function Dashboard() {
       <PageHeader title="Dashboard" description="Real-time asset health overview" alerts={metrics.pendingAlerts} showHomeButton={true} homeHref="/welcome" />
 
       <div className="p-6 space-y-6">
+        {/* AI Intelligence Banner */}
+        <div className="bg-gradient-to-r from-primary-50 via-purple-50 to-primary-50 border-l-4 border-primary-600 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">🧠</div>
+            <div>
+              <p className="font-semibold text-primary-900 mb-1">AI Sensing in Real-Time</p>
+              <p className="text-sm text-primary-800">
+                Your data universe is being continuously analyzed. Our AI senses patterns, predicts risks, and automatically defines priorities that emerge from complex correlations across all your assets. What would take months for humans to discover happens instantly.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Business Impact KPIs */}
         {calculatedMetrics ? (
           <div ref={kpisRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -733,8 +746,8 @@ export default function Dashboard() {
                     size="sm"
                     onClick={() => {
                       const link = document.createElement('a')
-                      link.href = '/Admin_Asset_Template.csv'
-                      link.download = 'Admin_Asset_Template.csv'
+                      link.href = '/Asset_Template.csv'
+                      link.download = 'Asset_Template.csv'
                       document.body.appendChild(link)
                       link.click()
                       document.body.removeChild(link)

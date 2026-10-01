@@ -10,11 +10,21 @@ export interface CSVValidationError {
   value: string
 }
 
+// Extended asset interface with optional fields captured from CSV
+export interface ExtendedImportedAsset extends ImportedAsset {
+  barcode?: string
+  endOfSale?: string
+  replacementProduct?: string
+  productParts?: string
+  potentialHealthImpact?: string
+  riskLevel?: string
+}
+
 export interface CSVProcessingResult {
   success: boolean
   assetsImported: number
   errors: CSVValidationError[]
-  assets: ImportedAsset[]
+  assets: ExtendedImportedAsset[]
   warnings: string[]
 }
 
@@ -43,6 +53,15 @@ const REQUIRED_FIELDS = [
   'Location',
   'Cost',
   'Purchase Date',
+]
+
+const OPTIONAL_FIELDS = [
+  'Barcode',
+  'End of Sale',
+  'Replacement Product',
+  'Product Parts',
+  'Potential Health Impact',
+  'Risk Level',
 ]
 
 export function parseCSV(csvContent: string): string[][] {
@@ -116,7 +135,7 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
     const rowNumber = rowIndex + 1
 
     try {
-      // Extract and validate fields
+      // Extract and validate required fields
       const assetId = row[headerMap['Asset ID']]?.trim()
       const assetType = row[headerMap['Asset Type']]?.trim()
       const productName = row[headerMap['Product Name']]?.trim()
@@ -132,6 +151,14 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
       const location = row[headerMap['Location']]?.trim()
       const costStr = row[headerMap['Cost']]?.trim()
       const purchaseDate = row[headerMap['Purchase Date']]?.trim()
+
+      // Extract optional fields
+      const barcode = row[headerMap['Barcode']]?.trim()
+      const endOfSale = row[headerMap['End of Sale']]?.trim()
+      const replacementProduct = row[headerMap['Replacement Product']]?.trim()
+      const productParts = row[headerMap['Product Parts']]?.trim()
+      const potentialHealthImpact = row[headerMap['Potential Health Impact']]?.trim()
+      const riskLevel = row[headerMap['Risk Level']]?.trim()
 
       // Validate required fields
       if (!assetId) {
@@ -243,8 +270,8 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
         continue
       }
 
-      // Build asset object
-      const asset: ImportedAsset = {
+      // Build asset object with optional fields
+      const asset: ExtendedImportedAsset = {
         assetId,
         assetType,
         productName,
@@ -260,6 +287,13 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
         location,
         cost,
         purchaseDate: purchaseDate || new Date().toISOString().split('T')[0],
+        // Optional fields
+        ...(barcode && { barcode }),
+        ...(endOfSale && { endOfSale }),
+        ...(replacementProduct && { replacementProduct }),
+        ...(productParts && { productParts }),
+        ...(potentialHealthImpact && { potentialHealthImpact }),
+        ...(riskLevel && { riskLevel }),
       }
 
       assets.push(asset)

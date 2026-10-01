@@ -4,7 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/common/Button'
 import { Card, CardBody } from '@/components/common/Card'
-import { Package, AlertTriangle, BarChart3, Shield, TrendingUp, CheckCircle } from 'lucide-react'
+import { Package, AlertTriangle, BarChart3, Shield, TrendingUp, CheckCircle, Brain, Zap, Target, Lightbulb } from 'lucide-react'
 
 export default function WelcomePage() {
   return (
@@ -113,6 +113,77 @@ export default function WelcomePage() {
                 </div>
               </CardBody>
             </Card>
+          </div>
+        </div>
+
+        {/* AI Intelligence Section - The USP */}
+        <div className="mb-12">
+          <h2 className="text-3xl font-bold text-center mb-2 text-neutral-900">🧠 AI-Powered Intelligence</h2>
+          <p className="text-center text-neutral-600 mb-8 text-lg">Where AI Senses What Human Intelligence Alone Cannot</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-2 border-primary-200 bg-primary-50">
+              <CardBody>
+                <div className="flex gap-4">
+                  <Brain className="w-8 h-8 text-primary-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-2">Pattern Recognition Beyond Observation</h4>
+                    <p className="text-sm text-neutral-700">
+                      Our AI continuously analyzes thousands of data points across your entire asset universe, detecting complex patterns and correlations that would be impossible for human analysts to identify manually. Spot hidden trends before they become critical issues.
+                    </p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            <Card className="border-2 border-primary-200 bg-primary-50">
+              <CardBody>
+                <div className="flex gap-4">
+                  <Zap className="w-8 h-8 text-primary-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-2">Predictive Intelligence</h4>
+                    <p className="text-sm text-neutral-700">
+                      Move beyond reactive problem-solving. Our algorithms predict equipment failures, compliance violations, and business continuity risks days or weeks in advance. Transform your operations from reactive to truly proactive.
+                    </p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            <Card className="border-2 border-primary-200 bg-primary-50">
+              <CardBody>
+                <div className="flex gap-4">
+                  <Target className="w-8 h-8 text-primary-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-2">Autonomous Risk Sensing</h4>
+                    <p className="text-sm text-neutral-700">
+                      The system automatically senses and classifies risk across multiple dimensions—health, compliance, continuity—without manual thresholds. Dynamic algorithms adapt to your data universe, improving accuracy as more intelligence flows in.
+                    </p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            <Card className="border-2 border-primary-200 bg-primary-50">
+              <CardBody>
+                <div className="flex gap-4">
+                  <Lightbulb className="w-8 h-8 text-primary-600 flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-2">Objective Definition from Data</h4>
+                    <p className="text-sm text-neutral-700">
+                      Instead of guessing priorities, our AI analyzes your complete asset ecosystem and automatically recommends actions, ranked by impact. What matters most emerges from the data itself, not assumptions.
+                    </p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+
+          <div className="mt-8 p-6 bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg border border-primary-200">
+            <p className="text-center text-neutral-900 font-semibold mb-2">The AI Advantage</p>
+            <p className="text-center text-neutral-700 text-sm">
+              While traditional asset management relies on manual observation and static rules, our AI-driven system continuously "listens" to your data universe in real-time. It senses patterns, predicts outcomes, and defines priorities that emerge from complex interdependencies humans would take months to discover.
+            </p>
           </div>
         </div>
 
