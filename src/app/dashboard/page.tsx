@@ -17,6 +17,7 @@ import { validateAndProcessCSV } from '@/lib/import/csvProcessor'
 import { calculateMetrics, CalculatedMetrics } from '@/lib/calculations/metricCalculator'
 import { ImportedAsset } from '@/lib/calculations/metricCalculator'
 import { useDashboard } from '@/lib/context/dashboardContext'
+import { getCalculationDescription } from '@/lib/data/calculationDescriptions'
 
 const HEALTH_COLORS = {
   healthy: '#22c55e',
@@ -210,6 +211,7 @@ export default function Dashboard() {
               icon={<DollarSign className="w-6 h-6" />}
               variant="positive"
               description="From predictive maintenance & avoiding failures"
+              calculation="Estimated cost savings from preventing asset failures through predictive maintenance. Calculated as: (Critical assets × failure cost estimate) + (At-risk assets × prevention cost)"
             />
             <BusinessKPI
               label="Employees at Health Risk"
@@ -217,6 +219,7 @@ export default function Dashboard() {
               icon={<Heart className="w-6 h-6" />}
               variant="negative"
               description="From aging/poor condition assets"
+              calculation="Number of employees potentially exposed to health risks from faulty equipment, poor ergonomics, or non-compliant assets. Estimated from critical + end-of-life assets in office areas."
             />
             <BusinessKPI
               label="Global Pollution Index"
@@ -232,6 +235,7 @@ export default function Dashboard() {
               }
               description="Comprehensive environmental & compliance score"
               zeroNote="No replaceable asset found - Organization shows lack of awareness for asset lifecycle management"
+              calculation="Composite environmental impact score. Calculated as: (Weighted CO₂e emissions + waste impact + compliance violations) / (Total assets × baseline factor). Range 0-100, where higher values = greater environmental impact."
             />
             <BusinessKPI
               label="Business Continuity Risk"
@@ -239,6 +243,7 @@ export default function Dashboard() {
               icon={<AlertTriangle className="w-6 h-6" />}
               variant={calculatedMetrics.businessContinuityRisk === 'Critical' ? 'negative' : calculatedMetrics.businessContinuityRisk === 'High' ? 'warning' : 'positive'}
               description="Based on critical and end-of-life assets"
+              calculation="Risk assessment for business operations continuity. Critical if >20% assets are critical/EOL, High if 10-20%, Low if <10%. Accounts for asset criticality and backup availability."
             />
           </div>
         ) : (
@@ -263,6 +268,7 @@ export default function Dashboard() {
               icon={<Battery className="w-6 h-6" />}
               variant="positive"
               description="From DLE-suitable assets in inventory"
+              calculation="Sum of estimated lithium content from all DLE-suitable assets (Laptops, Tablets, Smartphones, UPS Systems, EVs). Calculated as: Sum of (asset lithium content min-max average × quantity) from materials database."
             />
             <BusinessKPI
               label="DLE Recovery Value"
@@ -270,6 +276,7 @@ export default function Dashboard() {
               icon={<DollarSign className="w-6 h-6" />}
               variant="positive"
               description="Current market value (est.)"
+              calculation="Total estimated monetary value from Direct Lithium Extraction. Calculated as: Sum of (asset recovery value min-max average) for all DLE-suitable assets from materials database. Based on current lithium market prices."
             />
             <BusinessKPI
               label="CO₂e Savings (DLE)"
@@ -278,6 +285,7 @@ export default function Dashboard() {
               icon={<Leaf className="w-6 h-6" />}
               variant="positive"
               description="vs. primary lithium extraction"
+              calculation="Carbon emissions prevented by using DLE instead of primary lithium mining. Calculated as: Sum of (asset co2eSavingsVsPrimaryMining) for all DLE-suitable assets. DLE reduces mining emissions by ~95% vs. traditional extraction."
             />
             <BusinessKPI
               label="DLE Suitable Assets"
@@ -286,6 +294,7 @@ export default function Dashboard() {
               icon={<CheckCircle className="w-6 h-6" />}
               variant="positive"
               description="Ready for DLE processing pathway"
+              calculation="Count of assets with lithium batteries suitable for Direct Lithium Extraction. Includes: Laptops, Tablets, Smartphones, UPS Systems, Electric Vehicles. Calculated as: Count of assets where isDLESuitable = true."
             />
           </div>
           <div className="mt-2 text-xs text-neutral-600 flex items-center gap-2">
@@ -304,6 +313,7 @@ export default function Dashboard() {
               icon={<AlertTriangle className="w-6 h-6" />}
               variant="negative"
               description="Assets violating international standards"
+              calculation="Percentage of assets violating EPA, RoHS, ISO, OSHA, or GDPR standards. Calculated as: (Assets violating standards / Total assets) × 100%. Covers regional compliance requirements."
             />
             <BusinessKPI
               label="Potential Compliance Fine Exposure"
@@ -312,6 +322,7 @@ export default function Dashboard() {
               icon={<DollarSign className="w-6 h-6" />}
               variant="negative"
               description="Estimated regulatory penalties"
+              calculation="Estimated financial liability from compliance violations. Calculated based on: (Violation severity × regional fine structure × asset value) for EPA, GDPR, RoHS, OSHA violations. Conservative estimates of potential regulatory penalties."
             />
             <BusinessKPI
               label="Assets Violating Standards"
@@ -319,6 +330,7 @@ export default function Dashboard() {
               icon={<Shield className="w-6 h-6" />}
               variant="negative"
               description="EPA, RoHS, ISO, OSHA, GDPR violations"
+              calculation="Count of assets failing compliance checks across EPA, RoHS, ISO, OSHA, and GDPR standards. Calculated as: Sum of assets marked as non-compliant per standard by region + assets exceeding safe operating parameters."
             />
             <BusinessKPI
               label="Global Compliance Risk Score"
@@ -327,6 +339,7 @@ export default function Dashboard() {
               icon={<AlertTriangle className="w-6 h-6" />}
               variant="negative"
               description={calculatedMetrics.globalComplianceRiskScore > 7 ? 'Critical - Immediate action required' : 'Requires attention'}
+              calculation="Composite compliance risk assessment (0-10 scale). Calculated as: (Violation rate × 3) + (Fine exposure severity × 2) + (Regional regulatory gaps × 2) + (Asset age factor × 3). Higher = greater risk. 8+ = Critical."
             />
           </div>
         ) : (

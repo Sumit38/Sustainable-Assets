@@ -1,5 +1,6 @@
 import React from 'react'
 import { Card, CardBody } from '@/components/common/Card'
+import { Tooltip } from '@/components/common/Tooltip'
 
 interface StatCardProps {
   label: string
@@ -8,9 +9,10 @@ interface StatCardProps {
   icon?: React.ReactNode
   trend?: number
   variant?: 'default' | 'success' | 'warning' | 'danger'
+  tooltip?: string | React.ReactNode
 }
 
-export function StatCard({ label, value, unit, icon, trend, variant = 'default' }: StatCardProps) {
+export function StatCard({ label, value, unit, icon, trend, variant = 'default', tooltip }: StatCardProps) {
   const variantStyles = {
     default: 'border-l-4 border-l-primary-500',
     success: 'border-l-4 border-l-success-500',
@@ -24,7 +26,10 @@ export function StatCard({ label, value, unit, icon, trend, variant = 'default' 
     <Card className={`${variantStyles[variant]} overflow-hidden`}>
       <CardBody className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm text-neutral-600 mb-2">{label}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-sm text-neutral-600">{label}</p>
+            {tooltip && <Tooltip content={tooltip} side="right" />}
+          </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold text-neutral-900">{value}</span>
             {unit && <span className="text-sm text-neutral-500">{unit}</span>}

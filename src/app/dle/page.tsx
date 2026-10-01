@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
+import { Tooltip } from '@/components/common/Tooltip'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { isDLESuitable, getAssetProfile } from '@/lib/data/assetMaterialDatabase'
 import { TrendingUp, Battery, Droplet, DollarSign, AlertTriangle, CheckCircle, AlertCircle, Zap } from 'lucide-react'
@@ -286,11 +287,14 @@ export default function DLEPage() {
 
             {/* DLE Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
+              <Card tooltip="Sum of lithium content from all DLE-suitable assets (Laptops, Tablets, Smartphones, UPS Systems, EVs). Calculated using material profiles: lithium content (min-max average) × quantity.">
                 <CardBody>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-neutral-600 mb-2">Recoverable Lithium</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-sm text-neutral-600">Recoverable Lithium</p>
+                        <Tooltip content="Sum of lithium content from all DLE-suitable assets (Laptops, Tablets, Smartphones, UPS Systems, EVs). Calculated using material profiles: lithium content (min-max average) × quantity." side="right" />
+                      </div>
                       <p className="text-3xl font-bold text-success-600">{dleMetrics.totalRecoverableLithium}</p>
                       <p className="text-xs text-neutral-500 mt-1">kg from {dleMetrics.dleSuitableAssets} assets</p>
                     </div>
@@ -299,11 +303,14 @@ export default function DLEPage() {
                 </CardBody>
               </Card>
 
-              <Card>
+              <Card tooltip="Count of assets with lithium batteries suitable for Direct Lithium Extraction. Includes: Laptops, Tablets, Smartphones, UPS Systems, Electric Vehicles. Calculated as: Count of assets where isDLESuitable = true.">
                 <CardBody>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-neutral-600 mb-2">DLE-Suitable Assets</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-sm text-neutral-600">DLE-Suitable Assets</p>
+                        <Tooltip content="Count of assets with lithium batteries suitable for Direct Lithium Extraction. Includes: Laptops, Tablets, Smartphones, UPS Systems, Electric Vehicles. Calculated as: Count of assets where isDLESuitable = true." side="right" />
+                      </div>
                       <p className="text-3xl font-bold text-primary-600">{dleMetrics.dleSuitableAssets}</p>
                       <p className="text-xs text-neutral-500 mt-1">({dleMetrics.dleCandidatePercentage}% of inventory)</p>
                     </div>
@@ -312,11 +319,14 @@ export default function DLEPage() {
                 </CardBody>
               </Card>
 
-              <Card>
+              <Card tooltip="Total estimated monetary value from Direct Lithium Extraction. Calculated as: Sum of (asset recovery value min-max average) for all DLE-suitable assets from materials database. Based on current lithium market prices (~$10-15k/kg).">
                 <CardBody>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-neutral-600 mb-2">DLE Recovery Value</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-sm text-neutral-600">DLE Recovery Value</p>
+                        <Tooltip content="Total estimated monetary value from Direct Lithium Extraction. Calculated as: Sum of (asset recovery value min-max average) for all DLE-suitable assets from materials database. Based on current lithium market prices (~$10-15k/kg)." side="right" />
+                      </div>
                       <p className="text-3xl font-bold text-warning-600">${dleMetrics.totalLithiumValue}</p>
                       <p className="text-xs text-neutral-500 mt-1">at current rates</p>
                     </div>
@@ -325,11 +335,14 @@ export default function DLEPage() {
                 </CardBody>
               </Card>
 
-              <Card>
+              <Card tooltip="Carbon emissions prevented by using DLE instead of primary lithium mining. Calculated as: Sum of (asset co2eSavingsVsPrimaryMining) for all DLE-suitable assets. DLE reduces mining emissions by ~95% vs. traditional extraction.">
                 <CardBody>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-neutral-600 mb-2">CO₂e Savings</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-sm text-neutral-600">CO₂e Savings</p>
+                        <Tooltip content="Carbon emissions prevented by using DLE instead of primary lithium mining. Calculated as: Sum of (asset co2eSavingsVsPrimaryMining) for all DLE-suitable assets. DLE reduces mining emissions by ~95% vs. traditional extraction." side="right" />
+                      </div>
                       <p className="text-3xl font-bold text-green-600">{dleMetrics.co2eSavingsVsDLE}</p>
                       <p className="text-xs text-neutral-500 mt-1">kg vs primary mining</p>
                     </div>

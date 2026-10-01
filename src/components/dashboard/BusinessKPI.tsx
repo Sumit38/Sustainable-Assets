@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Card, CardBody } from '@/components/common/Card'
+import { Tooltip } from '@/components/common/Tooltip'
 import { TrendingUp, TrendingDown, DollarSign, Users, Leaf, AlertTriangle } from 'lucide-react'
 
 interface BusinessKPIProps {
@@ -20,6 +21,7 @@ interface BusinessKPIProps {
     label: string
     value: string | number
   }
+  calculation?: string | React.ReactNode
 }
 
 export function BusinessKPI({
@@ -32,6 +34,7 @@ export function BusinessKPI({
   description,
   zeroNote,
   submetric,
+  calculation,
 }: BusinessKPIProps) {
   const variantStyles = {
     positive: 'bg-success-50 border-success-200',
@@ -79,7 +82,10 @@ export function BusinessKPI({
           )}
         </div>
 
-        <p className="text-sm font-medium text-neutral-600 mb-2">{label}</p>
+        <div className="flex items-center gap-2 mb-2">
+          <p className="text-sm font-medium text-neutral-600">{label}</p>
+          {calculation && <Tooltip content={calculation} side="right" />}
+        </div>
 
         <div className="mb-3">
           <div className={`text-3xl font-bold ${valueStyles[variant]}`}>
