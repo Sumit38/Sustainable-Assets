@@ -22,6 +22,7 @@ export function FactorQuestionnaire({
 }: FactorQuestionnaireProps) {
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const [selectedValue, setSelectedValue] = useState<number | null>(null)
 
   const { questions } = getMissingDataDescription(missingFields)
 
@@ -33,6 +34,7 @@ export function FactorQuestionnaire({
   // Progress based on answered questions, not viewed questions
   const answeredCount = Object.keys(answers).length
   const progress = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0
+  const isLastQuestion = currentQuestionIndex === questions.length - 1
 
   const handleAnswer = (value: number) => {
     const newAnswers = {
@@ -40,13 +42,19 @@ export function FactorQuestionnaire({
       [currentQuestion.fieldName]: value,
     }
     setAnswers(newAnswers)
+    setSelectedValue(null)
 
     // Move to next question or complete
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
     } else {
-      onComplete(newAnswers)
+      // Auto-complete on last question answer
+      setTimeout(() => onComplete(newAnswers), 100)
     }
+  }
+
+  const handleCompleteClick = () => {
+    onComplete(answers)
   }
 
   const handleSkip = () => {
@@ -103,30 +111,42 @@ export function FactorQuestionnaire({
 
           {/* Options */}
           <div className="space-y-2">
-            {currentQuestion.options.map((option, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  handleAnswer(option.value)
-                }}
-                className="w-full p-4 text-left border-2 border-neutral-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all group cursor-pointer active:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-1"
-              >
-                <div className="flex items-start justify-between pointer-events-none">
-                  <div>
-                    <p className="font-medium text-neutral-900 group-hover:text-primary-600">
-                      {option.label}
-                    </p>
-                    {option.description && (
-                      <p className="text-xs text-neutral-600 mt-1">{option.description}</p>
-                    )}
+            {currentQuestion.options.map((option, idx) => {
+              const isSelected = selectedValue === option.value
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setSelectedValue(option.value)
+                    handleAnswer(option.value)
+                  }}
+                  className={`w-full p-4 text-left border-2 rounded-lg transition-all group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-1 ${
+                    isSelected
+                      ? 'border-primary-600 bg-primary-50 shadow-md'
+                      : 'border-neutral-200 hover:border-primary-400 hover:bg-primary-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between pointer-events-none">
+                    <div>
+                      <p className={`font-medium ${isSelected ? 'text-primary-900' : 'text-neutral-900 group-hover:text-primary-600'}`}>
+                        {option.label}
+                      </p>
+                      {option.description && (
+                        <p className="text-xs text-neutral-600 mt-1">{option.description}</p>
+                      )}
+                    </div>
+                    <div className={`w-5 h-5 border-2 rounded-full flex-shrink-0 flex items-center justify-center transition-all ${
+                      isSelected
+                        ? 'border-primary-600 bg-primary-600'
+                        : 'border-neutral-300 group-hover:border-primary-400'
+                    }`}>
+                      {isSelected && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
                   </div>
-                  <div className="w-5 h-5 border-2 border-neutral-300 rounded-full flex-shrink-0 group-hover:border-primary-400 group-hover:bg-primary-100" />
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
 
           {/* Info box */}
@@ -163,11 +183,7 @@ export function FactorQuestionnaire({
               </Button>
               <Button
                 variant="primary"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onComplete(answers)
-                }}
+                onClick={handleCompleteClick}
                 className="flex-1 cursor-pointer"
                 type="button"
               >
