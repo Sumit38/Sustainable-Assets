@@ -139,16 +139,15 @@ Warming impact (kg CO2e)  = methane released × 28 (100-year global warming pote
     id: 'gpi',
     group: 'Sustainability',
     title: 'Global Pollution Index (GPI)',
-    summary: 'Combined environmental score, 0–100, higher is worse.',
-    formula: `Scope 2 ≈ 30% and Scope 3 ≈ 40% of operational CO2e
-Each ratio = actual ÷ replaceable baseline (capped at 100%)
-GPI = average(Scope 2, Scope 3, Energy ratios) × (assets needing replacement ÷ total) × 100`,
+    summary: 'How much of your carbon footprint comes from over-used assets, 0–100, higher is worse.',
+    formula: `GPI = (Scope 1 + 2 + 3 of over-used assets ÷ Scope 1 + 2 + 3 of the whole fleet) × 100
+Over-used = critical or past end of life
+Bands: below 20 good · 20–39 attention · 40+ high`,
     inputs: [
-      { name: 'Annual CO2e', source: 'file' },
-      { name: 'Scope 2/3 split', source: 'rule' },
-      { name: 'Baselines: 0.5 t, 0.8 t per replaceable asset; 0.3 t per asset', source: 'rule' },
+      { name: 'Scope 1/2/3 per asset (see emissions above)', source: 'file' },
+      { name: 'Health Status, Last Date of Support', source: 'file' },
     ],
-    notes: ['The Scope 2/3 split and baselines are fixed estimates, not taken from your file.'],
+    notes: ['Uses the same Scope 1/2/3 figures as the Sustainability page, so the index and the page always agree.'],
   },
   {
     id: 'lithium',

@@ -268,7 +268,7 @@ export default function Dashboard() {
               />
               <StoryCard
                 title="Sustainability"
-                value={fmtT(emissions.overUsedNow.total)}
+                value={fmtT(emissions.replaceableNow.total)}
                 unit="t CO₂e / yr"
                 caption="emitted by over-used assets (Scope 1 + 2 + 3)"
                 icon={<Leaf className="w-5 h-5" />}
@@ -283,7 +283,7 @@ export default function Dashboard() {
                         : '—',
                     tone: emissions.replaceableAfter.total < emissions.replaceableNow.total ? 'success' : 'neutral',
                   },
-                  { label: 'Electricity, over-used assets', value: `${fmtT(emissions.overUsedNow.kWh / 1000)} MWh / yr` },
+                  { label: 'Electricity, over-used assets', value: `${fmtT(emissions.replaceableNow.kWh / 1000)} MWh / yr` },
                   { label: 'Whole-fleet emissions', value: `${fmtT(emissions.fleet.total)} t / yr` },
                 ]}
                 info={

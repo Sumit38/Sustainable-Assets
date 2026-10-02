@@ -2,14 +2,14 @@
 
 import React, { ReactNode, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ShieldAlert, HeartPulse, Leaf, BatteryCharging, RefreshCcw, Wallet } from 'lucide-react'
+import { ShieldCheck, HeartPulse, Leaf, BatteryCharging, RefreshCcw, Wallet } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { InfoTip } from '@/components/common/InfoTip'
 import { FilterBar } from '@/components/dashboard/FilterBar'
 import { NoData } from '@/components/common/ui'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { calculateMetrics } from '@/lib/calculations/metricCalculator'
-import { summariseEmissions } from '@/lib/calculations/emissionsModel'
+import { methaneAtEndOfLife, summariseEmissions } from '@/lib/calculations/emissionsModel'
 import {
   COMPLIANCE_THRESHOLD,
   DashboardFilters,
@@ -38,6 +38,7 @@ interface Score {
   info: ReactNode
   logic: string
   missing?: string
+  after?: { value: string; now: number; then: number }
 }
 
 interface Group {
@@ -48,6 +49,7 @@ interface Group {
 }
 
 const fmtT = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2))
+const rateTone = (r: number): Tone => (r >= 90 ? 'good' : r >= 75 ? 'warn' : 'bad')
 const band = (v: number, warn: number, bad: number): Tone => (v >= bad ? 'bad' : v >= warn ? 'warn' : 'good')
 
 function ScoreTile({ s }: { s: Score }) {
@@ -62,6 +64,25 @@ function ScoreTile({ s }: { s: Score }) {
           <span className="block text-2xl font-bold text-neutral-300">—</span>
           {s.missing}
         </p>
+      ) : s.after ? (
+        <div className="mt-1 flex-1">
+          <p className="text-2xl font-bold text-neutral-900">
+            {s.value}
+            <span className="mx-1.5 text-base font-normal text-neutral-400">→</span>
+            <span className={s.after.then < s.after.now ? 'text-success-600' : s.after.then > s.after.now ? 'text-warning-600' : 'text-neutral-900'}>
+              {s.after.value}
+            </span>
+          </p>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            {s.unit} · now → after replacement
+            {s.after.now > 0 && s.after.value !== s.value && (
+              <span className={`ml-1 font-semibold ${s.after.then < s.after.now ? 'text-success-600' : 'text-warning-600'}`}>
+                {s.after.then < s.after.now ? '' : '+'}
+                {Math.round(((s.after.then - s.after.now) / s.after.now) * 100)}%
+              </span>
+            )}
+          </p>
+        </div>
       ) : (
         <p className={`text-2xl font-bold mt-1 flex-1 ${TONE[s.tone ?? 'neutral']}`}>
           {s.value}
@@ -85,6 +106,7 @@ export default function ScoreLibraryPage() {
   const m = useMemo(() => calculateMetrics(assets), [assets])
   const ins = useMemo(() => computeInsights(assets, filters.standard), [assets, filters.standard])
   const em = useMemo(() => summariseEmissions(assets), [assets])
+  const methane = useMemo(() => methaneAtEndOfLife(assets), [assets])
 
   if (importedAssets.length === 0) {
     return (
@@ -99,38 +121,53 @@ export default function ScoreLibraryPage() {
 
   const has = (pick: (a: (typeof assets)[number]) => unknown) => assets.some(a => typeof pick(a) === 'number')
   const hasEmployees = has(a => a.employeesAffected)
-  const hasCo2 = has(a => a.annualCO2e)
+  const gpi = em.fleet.total > 0 ? Math.round((em.overUsedNow.total / em.fleet.total) * 100) : 0
   const hasMaint = has(a => a.annualMaintenanceCost)
   const hasReplacement = has(a => a.replacementCost)
 
   const groups: Group[] = [
     {
-      title: 'Compliance risk',
-      icon: <ShieldAlert className="w-5 h-5" />,
-      accent: 'bg-danger-50 text-danger-600',
+      title: 'Compliance',
+      icon: <ShieldCheck className="w-5 h-5" />,
+      accent: 'bg-success-50 text-success-600',
       scores: [
         {
-          name: 'Non-compliant assets',
-          value: formatNumber(m.assetsViolatingStandards),
-          unit: 'assets',
-          tone: m.assetsViolatingStandards > 0 ? 'bad' : 'good',
-          info: `Assets with a Compliance Score below ${COMPLIANCE_THRESHOLD}. Same figure as the dashboard's Compliance risk card.`,
+          name: 'Compliance rate',
+          value: `${ins.compliance.complianceRate}`,
+          unit: '%',
+          tone: rateTone(ins.compliance.complianceRate),
+          info: `${ins.compliance.compliantCount} of ${assets.length} assets have a Compliance Score of ${COMPLIANCE_THRESHOLD} or above. Same figure as the dashboard's Compliance card.`,
           logic: 'compliance',
         },
         {
-          name: 'Violation rate',
-          value: `${m.globalComplianceViolationRate}`,
-          unit: '%',
-          tone: band(m.globalComplianceViolationRate, 10, 25),
-          info: 'Non-compliant assets as a share of all assets in this selection.',
+          name: 'Regulations in scope',
+          value: `${ins.compliance.regulations.length}`,
+          unit: `covering ${formatNumber(ins.compliance.assetsInScope)} assets`,
+          info: "The regulations your assets fall under, based on each asset's type and region.",
+          logic: 'fines',
+        },
+        {
+          name: 'Average compliance score',
+          value: ins.compliance.avgScore.toFixed(0),
+          unit: '/ 100',
+          tone: ins.compliance.avgScore >= COMPLIANCE_THRESHOLD ? 'good' : 'warn',
+          info: `Average Compliance Score across the selection. Target: ${COMPLIANCE_THRESHOLD} or above.`,
           logic: 'compliance',
         },
         {
           name: 'Potential fines',
-          value: formatMoney(m.potentialFineExposure),
-          tone: m.potentialFineExposure > 0 ? 'bad' : 'good',
-          info: 'Each non-compliant asset × the published fine per violation of every regulation that applies to its type and region.',
+          value: formatMoney(ins.compliance.fineExposure),
+          tone: ins.compliance.fineExposure > 0 ? 'bad' : 'good',
+          info: 'What the assets below target could cost: each one × the published fine per violation of every regulation that applies to it.',
           logic: 'fines',
+        },
+        {
+          name: 'Assets below target',
+          value: formatNumber(ins.compliance.nonCompliantCount),
+          unit: 'assets',
+          tone: ins.compliance.nonCompliantCount > 0 ? 'warn' : 'good',
+          info: `Assets with a Compliance Score below ${COMPLIANCE_THRESHOLD}.`,
+          logic: 'compliance',
         },
         {
           name: 'Past end of support',
@@ -180,20 +217,36 @@ export default function ScoreLibraryPage() {
       icon: <Leaf className="w-5 h-5" />,
       accent: 'bg-success-50 text-success-600',
       scores: [
-        {
-          name: 'Over-used assets: emissions',
-          value: fmtT(em.overUsedNow.total),
+        ...(['scope1', 'scope2', 'scope3'] as const).map((k, i) => ({
+          name: `Scope ${i + 1}: over-used assets`,
+          value: fmtT(em.replaceableNow[k]),
           unit: 't CO₂e / yr',
-          info: "Scope 1 + 2 + 3 per year for assets that are critical or past end of life. Same figure as the dashboard's Sustainability card.",
+          after: { value: fmtT(em.replaceableAfter[k]), now: em.replaceableNow[k], then: em.replaceableAfter[k] },
+          info: [
+            'Direct emissions from fuel the asset burns (e.g. petrol vehicles). Office electronics and furniture have none.',
+            "Emissions from the electricity the asset uses: kWh × the country's grid emission factor.",
+            "Manufacturing emissions spread over the asset's lifetime, including the replacement's own manufacturing.",
+          ][i],
           logic: 'emissions',
+          missing: em.replaceable.length ? undefined : 'No over-used assets in this selection.',
+        })),
+        {
+          name: 'Total emissions: over-used assets',
+          value: fmtT(em.replaceableNow.total),
+          unit: 't CO₂e / yr',
+          after: { value: fmtT(em.replaceableAfter.total), now: em.replaceableNow.total, then: em.replaceableAfter.total },
+          info: "Scope 1 + 2 + 3 for over-used assets (critical or past end of life), today and after replacing them with current-generation models. Same figures as the dashboard's Sustainability card.",
+          logic: 'emissions',
+          missing: em.replaceable.length ? undefined : 'No over-used assets in this selection.',
         },
         {
-          name: 'After replacement',
-          value: em.replaceable.length ? fmtT(em.replaceableAfter.total) : '—',
-          unit: em.replaceable.length ? 't CO₂e / yr' : undefined,
-          tone: em.replaceableAfter.total < em.replaceableNow.total ? 'good' : 'neutral',
-          info: 'Predicted Scope 1 + 2 + 3 per year if the over-used assets are replaced with current-generation models.',
+          name: 'Electricity: over-used assets',
+          value: fmtT(em.replaceableNow.kWh / 1000),
+          unit: 'MWh / yr',
+          after: { value: fmtT(em.replaceableAfter.kWh / 1000), now: em.replaceableNow.kWh, then: em.replaceableAfter.kWh },
+          info: 'Electricity used during operation, today and after replacement: power (W) × usage hours per year.',
           logic: 'emissions',
+          missing: em.replaceable.length ? undefined : 'No over-used assets in this selection.',
         },
         {
           name: 'Whole-fleet emissions',
@@ -210,13 +263,20 @@ export default function ScoreLibraryPage() {
           logic: 'emissions',
         },
         {
+          name: 'Methane if sent to landfill',
+          value: fmtT(methane.co2eKg),
+          unit: 'kg CO₂e',
+          tone: methane.co2eKg > 0 ? 'warn' : 'good',
+          info: `Warming impact of methane from over-used assets decomposing in landfill (${methane.ch4Kg.toFixed(2)} kg CH₄). Avoidable by recycling.${methane.noFactorTypes.length ? ` No methane reference for: ${methane.noFactorTypes.join(', ')}.` : ''}`,
+          logic: 'methane',
+        },
+        {
           name: 'Global Pollution Index',
-          value: `${m.globalPollutionIndex}`,
+          value: `${gpi}`,
           unit: '/ 100',
-          tone: band(m.globalPollutionIndex, 40, 70),
-          info: 'Combines emission and energy ratios with the share of assets due for replacement. Higher is worse. Uses an estimated Scope 2/3 split.',
+          tone: band(gpi, 20, 40),
+          info: 'Share of your whole-fleet emissions that comes from over-used assets. Higher means more of your footprint is caused by assets that should already be replaced.',
           logic: 'gpi',
-          missing: hasCo2 ? undefined : 'Add the “Annual CO2e” column to see this.',
         },
       ],
     },
@@ -230,6 +290,13 @@ export default function ScoreLibraryPage() {
           value: ins.lithium.lithiumKg.toFixed(2),
           unit: 'kg lithium',
           info: 'Lithium in retiring battery devices (laptops, tablets, phones, UPS, EVs), from typical content per device type.',
+          logic: 'lithium',
+        },
+        {
+          name: 'Lithium across fleet',
+          value: ins.lithium.fleetLithiumKg.toFixed(2),
+          unit: 'kg lithium',
+          info: 'Lithium in all battery devices, including those still in use: your future recovery pipeline.',
           logic: 'lithium',
         },
         {
@@ -314,7 +381,7 @@ export default function ScoreLibraryPage() {
 
   return (
     <div className="w-full">
-      <PageHeader title="Score Library" description="Every AssetPulse score in one place, with how each one is calculated" homeHref="/welcome" />
+      <PageHeader title="Score Library" description="Every AssetPulse score in one place, matching the Dashboard, Compliance and Sustainability pages" homeHref="/welcome" />
 
       <div className="p-6 space-y-6">
         <FilterBar filters={filters} onChange={setFilters} options={options} shown={assets.length} total={importedAssets.length} />
