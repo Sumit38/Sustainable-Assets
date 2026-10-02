@@ -136,19 +136,28 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
   const fineExposure = standards.reduce((s, x) => s + x.exposure, 0)
 
   const employees = sumProvided(poorCondition, a => a.employeesAffected)
+  const allEmployees = sumProvided(assets, a => a.employeesAffected)
   const healthIssues = sumProvided(poorCondition, a => a.healthIssuesPerYear)
   const co2e = sumProvided(actionAssets, a => a.annualCO2e)
+  const fleetCo2e = sumProvided(assets, a => a.annualCO2e)
 
   let lithiumKg = 0
   let miningCo2eAvoidedKg = 0
   let lithiumAssets = 0
-  for (const a of actionAssets) {
+  let fleetLithiumKg = 0
+  let fleetLithiumDevices = 0
+  for (const a of assets) {
     const p = getAssetProfile(a.assetType)
     if (!p?.isDLESuitable) continue
-    lithiumKg += (p.lithiumContent.min + p.lithiumContent.max) / 2
+    const kg = (p.lithiumContent.min + p.lithiumContent.max) / 2
+    fleetLithiumKg += kg
+    fleetLithiumDevices++
+    if (!needsAction(a)) continue
+    lithiumKg += kg
     miningCo2eAvoidedKg += p.co2eSavingsVsPrimaryMining
     lithiumAssets++
   }
+  const avgComplianceScore = assets.length ? assets.reduce((s, a) => s + a.complianceScore, 0) / assets.length : 0
 
   const health: Record<HealthBucket, number> = { healthy: 0, 'at-risk': 0, critical: 0, 'end-of-life': 0 }
   for (const a of assets) health[effectiveHealth(a)]++
@@ -189,6 +198,9 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
     compliance: {
       pastEolCount: pastEol.length,
       nonCompliantCount: nonCompliant.length,
+      compliantCount: assets.length - nonCompliant.length,
+      complianceRate: assets.length ? Math.round(((assets.length - nonCompliant.length) / assets.length) * 100) : 0,
+      avgScore: avgComplianceScore,
       fineExposure,
       standards,
       regions: Array.from(byRegion.entries())
@@ -198,10 +210,11 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
     health: {
       poorConditionCount: poorCondition.length,
       employees,
+      allEmployees,
       healthIssues,
     },
-    sustainability: { co2eTonnes: co2e },
-    lithium: { lithiumKg, miningCo2eAvoidedKg, lithiumAssets },
+    sustainability: { co2eTonnes: co2e, fleetCo2eTonnes: fleetCo2e },
+    lithium: { lithiumKg, miningCo2eAvoidedKg, lithiumAssets, fleetLithiumKg, fleetLithiumDevices },
     charts: { health, timeline, byType },
   }
 }

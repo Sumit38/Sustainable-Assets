@@ -127,3 +127,14 @@ body {
     break-inside: avoid;
   }
 }
+
+@media (max-width: 767px) {
+  .page-header {
+    padding-left: 4.5rem;
+  }
+}
+@media (min-width: 768px) {
+  main[data-sidebar='collapsed'] .page-header {
+    padding-left: 4.5rem;
+  }
+}

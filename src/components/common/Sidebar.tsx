@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth/authContext'
@@ -63,32 +63,46 @@ function LogoutButton() {
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ collapsed, onToggleCollapsed }: { collapsed: boolean; onToggleCollapsed: () => void }) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
 
   const isActive = (href: string) => pathname === href
+  const desktopVisible = !collapsed
+
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    const update = () => setIsDesktop(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
+  const toggle = () => (isDesktop ? onToggleCollapsed() : setIsOpen(o => !o))
+  const expanded = isDesktop ? desktopVisible : isOpen
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <div className="fixed top-0 left-0 z-20 p-4 md:hidden">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2 bg-white rounded-lg shadow-md"
-        >
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={expanded ? 'Hide menu' : 'Show menu'}
+        title={expanded ? 'Hide menu' : 'Show menu'}
+        className={`print:hidden fixed top-5 left-4 z-30 p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+          isOpen ? 'text-white hover:bg-neutral-800' : 'bg-white text-neutral-700 shadow-md hover:bg-neutral-50'
+        } ${desktopVisible ? 'md:bg-transparent md:shadow-none md:text-neutral-300 md:hover:bg-neutral-800 md:hover:text-white' : ''}`}
+      >
+        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </button>
 
-      {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-screen w-64 bg-neutral-900 text-white transition-transform duration-300 z-10 flex flex-col ${
-          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
+        className={`fixed left-0 top-0 h-screen w-64 bg-neutral-900 text-white transition-transform duration-300 z-20 flex flex-col ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${desktopVisible ? 'md:translate-x-0' : ''}`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center h-20 border-b border-neutral-800 flex-shrink-0">
+        <div className="flex items-center justify-center h-20 pl-10 border-b border-neutral-800 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />
@@ -129,7 +143,7 @@ export function Sidebar() {
       {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-5 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}

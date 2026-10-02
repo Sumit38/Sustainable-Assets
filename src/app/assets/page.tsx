@@ -26,6 +26,7 @@ const HEALTH_ORDER: Record<string, number> = { 'end-of-life': 0, critical: 1, 'a
 const STATUS_TABS = [
   { key: 'all', label: 'All' },
   { key: 'action', label: 'Needs action' },
+  { key: 'poor', label: 'Poor condition' },
   { key: 'end-of-life', label: 'Past end of life' },
   { key: 'critical', label: 'Critical' },
   { key: 'at-risk', label: 'At risk' },
@@ -45,6 +46,8 @@ export default function AssetsPage() {
 
   useEffect(() => {
     setFilters(filtersFromQuery(window.location.search))
+    const s = new URLSearchParams(window.location.search).get('status')
+    if (s && STATUS_TABS.some(t => t.key === s)) setStatus(s)
   }, [])
   useEffect(() => setPage(0), [filters, status, search, sort])
 
@@ -56,7 +59,8 @@ export default function AssetsPage() {
     const list = base.filter(a => {
       const h = effHealth(a)
       if (status === 'action' && !needsAction(a)) return false
-      if (status !== 'all' && status !== 'action' && h !== status) return false
+      if (status === 'poor' && h === 'healthy') return false
+      if (!['all', 'action', 'poor'].includes(status) && h !== status) return false
       if (!q) return true
       return [a.assetId, a.productName, a.manufacturer, a.location].some(v => v?.toLowerCase().includes(q))
     })
@@ -66,10 +70,11 @@ export default function AssetsPage() {
   }, [base, status, search, sort])
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: base.length, action: 0 }
+    const c: Record<string, number> = { all: base.length, action: 0, poor: 0 }
     for (const a of base) {
       c[effHealth(a)] = (c[effHealth(a)] ?? 0) + 1
       if (needsAction(a)) c.action++
+      if (effHealth(a) !== 'healthy') c.poor++
     }
     return c
   }, [base])

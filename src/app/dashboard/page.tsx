@@ -7,7 +7,7 @@ import { StoryCard } from '@/components/dashboard/StoryCard'
 import { FilterBar } from '@/components/dashboard/FilterBar'
 import { ImportPanel } from '@/components/dashboard/ImportPanel'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ShieldAlert, HeartPulse, Leaf, BatteryCharging, Upload, Check, X } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, HeartPulse, Leaf, BatteryCharging, Upload, Check, X } from 'lucide-react'
 import { validateAndProcessCSV, ExtendedImportedAsset } from '@/lib/import/csvProcessor'
 import { calculateMetrics } from '@/lib/calculations/metricCalculator'
 import { useDashboard } from '@/lib/context/dashboardContext'
@@ -37,8 +37,8 @@ const TIMELINE_COLORS = ['#dc2626', '#f97316', '#eab308', '#0ea5e9', '#22c55e']
 const STORY = [
   {
     icon: <ShieldAlert className="w-5 h-5" />,
-    title: 'Compliance risk',
-    text: 'Find assets still in use after their end of support, and the regulatory fines they could trigger.',
+    title: 'Compliance',
+    text: 'See what share of your assets meets compliance targets, and the fines the rest could trigger.',
     tone: 'bg-danger-50 text-danger-600',
   },
   {
@@ -127,15 +127,14 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-neutral-900">See what your ageing assets are really costing you</h2>
             <p className="text-neutral-600 mt-2">
               Keeping assets past their end of life creates hidden risks. Upload your asset list and AssetPulse shows them
-              in four steps:
+              across four areas:
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {STORY.map((s, i) => (
+            {STORY.map(s => (
               <div key={s.title} className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm">
                 <span className={`flex items-center justify-center w-9 h-9 rounded-lg ${s.tone}`}>{s.icon}</span>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400 mt-3">Step {i + 1}</p>
-                <p className="font-semibold text-neutral-900">{s.title}</p>
+                <p className="font-semibold text-neutral-900 mt-3">{s.title}</p>
                 <p className="text-sm text-neutral-600 mt-1">{s.text}</p>
               </div>
             ))}
@@ -195,54 +194,62 @@ export default function Dashboard() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <StoryCard
-                step={1}
-                title="Compliance risk"
-                value={formatNumber(compliance.nonCompliantCount)}
-                unit="assets"
-                caption={`non-compliant (score below ${COMPLIANCE_THRESHOLD})`}
-                icon={<ShieldAlert className="w-5 h-5" />}
-                tone="danger"
+                title="Compliance"
+                value={`${compliance.complianceRate}%`}
+                unit="compliant"
+                caption={`${formatNumber(compliance.compliantCount)} of ${formatNumber(insights.total)} assets meet the target score of ${COMPLIANCE_THRESHOLD}`}
+                icon={<ShieldCheck className="w-5 h-5" />}
+                tone={compliance.complianceRate >= 90 ? 'success' : compliance.complianceRate >= 75 ? 'warning' : 'danger'}
                 href={`/compliance${query}`}
-                footnote={`${compliance.pastEolCount} past end of support · ${formatMoney(compliance.fineExposure)} potential fines`}
+                stats={[
+                  { label: 'Non-compliant assets', value: formatNumber(compliance.nonCompliantCount), tone: compliance.nonCompliantCount > 0 ? 'danger' : 'success' },
+                  { label: 'Potential fines', value: formatMoney(compliance.fineExposure), tone: compliance.fineExposure > 0 ? 'danger' : 'success' },
+                  { label: 'Past end of support', value: formatNumber(compliance.pastEolCount), tone: compliance.pastEolCount > 0 ? 'danger' : 'success' },
+                ]}
                 info={
                   <>
-                    <strong>Non-compliant:</strong> assets whose <em>Compliance Score</em> in your file is below{' '}
-                    {COMPLIANCE_THRESHOLD}. This is the same figure as “Assets Violating Standards” in the Score Library.
+                    <strong>Compliance rate:</strong> share of assets whose <em>Compliance Score</em> is {COMPLIANCE_THRESHOLD} or
+                    above. Average score in this selection: {compliance.avgScore.toFixed(0)}.
                     <br />
                     <br />
-                    <strong>Past end of support:</strong> assets still in use after their <em>Last Date of Support</em>.
-                    They no longer get safety or security fixes.
+                    <strong>Potential fines:</strong> each non-compliant asset is counted once for every regulation that applies
+                    to its type and region, multiplied by that regulation&apos;s published fine per violation.
                     <br />
                     <br />
-                    <strong>Potential fines:</strong> each non-compliant asset is counted once for every regulation that
-                    applies to its type and region, multiplied by that regulation&apos;s published fine per violation.
+                    <strong>Past end of support:</strong> assets still in use after their <em>Last Date of Support</em>; they no
+                    longer get safety or security fixes.
                   </>
                 }
               />
               <StoryCard
-                step={2}
                 title="Employee health"
                 value={formatNumber(health.employees.total)}
                 unit="employees"
                 caption="work with assets in poor condition"
                 icon={<HeartPulse className="w-5 h-5" />}
                 tone="warning"
-                href="/assets"
+                href={`/assets${query ? `${query}&` : '?'}status=poor`}
                 missingData={
                   health.poorConditionCount > 0 && health.employees.withData === 0
                     ? 'Add the “Employees Affected” column to your file to see who is exposed.'
                     : undefined
                 }
-                footnote={
-                  health.healthIssues.withData > 0
-                    ? `${formatNumber(health.healthIssues.total)} health issues reported / yr`
-                    : `From ${health.employees.withData} of ${health.employees.of} assets with data`
-                }
+                stats={[
+                  { label: 'Assets in poor condition', value: formatNumber(health.poorConditionCount), tone: health.poorConditionCount > 0 ? 'warning' : 'success' },
+                  {
+                    label: 'Share of employees',
+                    value: health.allEmployees.total > 0 ? `${Math.round((health.employees.total / health.allEmployees.total) * 100)}%` : '—',
+                  },
+                  {
+                    label: 'Health issues / year',
+                    value: health.healthIssues.withData > 0 ? formatNumber(health.healthIssues.total) : 'Not provided',
+                  },
+                ]}
                 info={
                   <>
-                    The total of the <em>Employees Affected</em> column for every asset that is at risk, critical or past
-                    end of life. Worn chairs, desks and equipment cause ergonomic and safety problems, so these people
-                    should be prioritised.
+                    The total of the <em>Employees Affected</em> column for every asset that is at risk, critical or past end of
+                    life. Worn chairs, desks and equipment cause ergonomic and safety problems, so these people should be
+                    prioritised.
                     <br />
                     <br />
                     Uses only the numbers in your file. Assets without this column are left out, not estimated.
@@ -250,52 +257,66 @@ export default function Dashboard() {
                 }
               />
               <StoryCard
-                step={3}
                 title="Sustainability"
                 value={sustainability.co2eTonnes.total.toFixed(1)}
                 unit="t CO₂e / yr"
                 caption="emitted by assets due for replacement"
                 icon={<Leaf className="w-5 h-5" />}
                 tone="success"
-                href="/sustainability"
+                href={`/sustainability${query}`}
                 missingData={
                   insights.actionCount > 0 && sustainability.co2eTonnes.withData === 0
                     ? 'Add the “Annual CO2e” column to your file to see the footprint.'
                     : undefined
                 }
-                footnote={`From ${sustainability.co2eTonnes.withData} of ${sustainability.co2eTonnes.of} assets with data`}
+                stats={[
+                  {
+                    label: 'Whole-fleet footprint',
+                    value: sustainability.fleetCo2eTonnes.withData > 0 ? `${sustainability.fleetCo2eTonnes.total.toFixed(1)} t / yr` : '—',
+                  },
+                  {
+                    label: 'Share from retiring assets',
+                    value:
+                      sustainability.fleetCo2eTonnes.total > 0
+                        ? `${Math.round((sustainability.co2eTonnes.total / sustainability.fleetCo2eTonnes.total) * 100)}%`
+                        : '—',
+                  },
+                  { label: 'Assets with CO₂e data', value: `${sustainability.fleetCo2eTonnes.withData} of ${sustainability.fleetCo2eTonnes.of}` },
+                ]}
                 info={
                   <>
-                    The total of the <em>Annual CO2e</em> column (tonnes per year) for assets that are critical or past
-                    end of life. Old equipment usually uses more energy than modern replacements, so this is the footprint
-                    you could cut by replacing them.
+                    The total of the <em>Annual CO2e</em> column (tonnes per year) for assets that are critical or past end of
+                    life. Old equipment usually uses more energy than modern replacements, so this is the footprint you could cut
+                    by replacing them.
                   </>
                 }
               />
               <StoryCard
-                step={4}
                 title="Lithium recovery (DLE)"
                 value={lithium.lithiumKg.toFixed(2)}
                 unit="kg"
-                caption="lithium recoverable from retiring devices"
+                caption="lithium recoverable now from retiring devices"
                 icon={<BatteryCharging className="w-5 h-5" />}
                 tone="primary"
-                href="/dle"
+                href={`/dle${query}`}
                 missingData={
                   lithium.lithiumAssets === 0
-                    ? 'None of the assets due for retirement contain lithium batteries (laptops, tablets, phones, UPS, EVs).'
+                    ? 'No retiring devices with lithium batteries yet (laptops, tablets, phones, UPS, EVs).'
                     : undefined
                 }
-                footnote={`${lithium.lithiumAssets} devices · ${formatNumber(lithium.miningCo2eAvoidedKg)} kg CO₂e mining avoided`}
+                stats={[
+                  { label: 'Retiring battery devices', value: formatNumber(lithium.lithiumAssets) },
+                  { label: 'Lithium across fleet', value: `${lithium.fleetLithiumKg.toFixed(2)} kg` },
+                  { label: 'Mining CO₂e avoided', value: `${formatNumber(lithium.miningCo2eAvoidedKg)} kg`, tone: 'success' },
+                ]}
                 info={
                   <>
                     Laptops, tablets, phones, UPS systems and electric vehicles due for retirement contain lithium batteries.
-                    Recovering it through Direct Lithium Extraction (DLE) and recycling means less new lithium has to be
-                    mined.
+                    Recovering it through Direct Lithium Extraction (DLE) and recycling means less new lithium has to be mined.
                     <br />
                     <br />
-                    Uses the typical lithium content of each device type from AssetPulse&apos;s materials reference, not a
-                    column in your file.
+                    Uses the typical lithium content of each device type from AssetPulse&apos;s materials reference, not a column
+                    in your file.
                   </>
                 }
               />
