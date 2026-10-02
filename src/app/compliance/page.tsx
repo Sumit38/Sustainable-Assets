@@ -2,11 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, ReferenceLine } from 'recharts'
 import { PageHeader } from '@/components/common/PageHeader'
-import { Kpi, NoData, Panel } from '@/components/common/ui'
 import { FilterBar } from '@/components/dashboard/FilterBar'
+import { AssetDrawer } from '@/components/assets/AssetDrawer'
+import { Kpi, NoData, Panel, Pagination, Pill, Empty } from '@/components/common/ui'
 import { useDashboard } from '@/lib/context/dashboardContext'
+import { ImportedAsset } from '@/lib/calculations/metricCalculator'
 import { ComplianceStandard, Region, getApplicableStandards } from '@/lib/data/complianceMatrix'
 import {
   ALL,
@@ -23,30 +25,35 @@ import {
   isPastEndOfLife,
 } from '@/lib/calculations/dashboardInsights'
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 20
 const SCORE_BUCKETS = [
-  { label: '0–19', min: 0, max: 20 },
-  { label: '20–39', min: 20, max: 40 },
-  { label: '40–59', min: 40, max: 60 },
-  { label: '60–79', min: 60, max: 80 },
-  { label: '80–100', min: 80, max: 101 },
+  { label: '0–39', min: 0, max: 40, color: '#ef4444' },
+  { label: '40–59', min: 40, max: 60, color: '#f97316' },
+  { label: '60–79', min: 60, max: 80, color: '#eab308' },
+  { label: '80–89', min: 80, max: 90, color: '#4ade80' },
+  { label: '90–100', min: 90, max: 101, color: '#16a34a' },
 ]
-
+const rateColor = (r: number) => (r >= 90 ? '#16a34a' : r >= 75 ? '#eab308' : '#ef4444')
+const rateTone = (r: number) => (r >= 90 ? 'text-success-600' : r >= 75 ? 'text-warning-600' : 'text-danger-600')
 const shortRegion = (r: string) => r.split(' (')[0]
+
+type ListView = 'all' | 'compliant' | 'below'
 
 export default function CompliancePage() {
   const router = useRouter()
   const { importedAssets } = useDashboard()
   const [filters, setFilters] = useState<DashboardFilters>(EMPTY_FILTERS)
-  const [visible, setVisible] = useState(PAGE_SIZE)
+  const [listView, setListView] = useState<ListView>('all')
+  const [page, setPage] = useState(0)
+  const [selected, setSelected] = useState<ImportedAsset | null>(null)
 
   useEffect(() => {
     setFilters(filtersFromQuery(window.location.search))
   }, [])
+  useEffect(() => setPage(0), [filters, listView])
 
   const updateFilters = (f: DashboardFilters) => {
     setFilters(f)
-    setVisible(PAGE_SIZE)
     window.history.replaceState(null, '', `/compliance${filtersToQuery(f)}`)
   }
   const toggle = (key: keyof DashboardFilters, value: string) =>
@@ -56,37 +63,12 @@ export default function CompliancePage() {
   const filtered = useMemo(() => filterAssets(importedAssets, filters), [importedAssets, filters])
   const { compliance } = useMemo(() => computeInsights(filtered, filters.standard), [filtered, filters.standard])
 
-  const nonCompliant = useMemo(
-    () =>
-      filtered
-        .filter(a => a.complianceScore < COMPLIANCE_THRESHOLD)
-        .sort((a, b) => a.complianceScore - b.complianceScore),
-    [filtered]
-  )
-
-  const avgScore = filtered.length ? filtered.reduce((s, a) => s + a.complianceScore, 0) / filtered.length : 0
-
-  const regionData = compliance.regions.map(r => ({
-    region: r.region,
-    name: shortRegion(r.region),
-    'Non-compliant': r.nonCompliant,
-    Compliant: r.total - r.nonCompliant,
-  }))
-
-  const fineData = compliance.standards.map(s => ({ standard: s.standard, name: s.standard, exposure: s.exposure, count: s.count }))
-
-  const scoreData = SCORE_BUCKETS.map(b => ({
-    label: b.label,
-    count: filtered.filter(a => a.complianceScore >= b.min && a.complianceScore < b.max).length,
-    failing: b.max <= COMPLIANCE_THRESHOLD,
-  }))
-
-  const deptMap = new Map<string, number>()
-  for (const a of nonCompliant) deptMap.set(a.department, (deptMap.get(a.department) ?? 0) + 1)
-  const deptData = Array.from(deptMap.entries())
-    .map(([department, count]) => ({ department, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8)
+  const list = useMemo(() => {
+    const rows = filtered.filter(a =>
+      listView === 'compliant' ? a.complianceScore >= COMPLIANCE_THRESHOLD : listView === 'below' ? a.complianceScore < COMPLIANCE_THRESHOLD : true
+    )
+    return rows.sort((a, b) => b.complianceScore - a.complianceScore)
+  }, [filtered, listView])
 
   const back = () => router.push(`/dashboard${filtersToQuery(filters)}`)
 
@@ -101,13 +83,48 @@ export default function CompliancePage() {
     )
   }
 
-  const pct = filtered.length ? Math.round((nonCompliant.length / filtered.length) * 100) : 0
+  const regionData = [...compliance.regions]
+    .sort((a, b) => b.total - a.total)
+    .map(r => ({ region: r.region, name: shortRegion(r.region), rate: r.rate, compliant: r.compliant, total: r.total }))
+
+  const regulationData = compliance.regulations.map(r => ({
+    standard: r.standard,
+    name: r.standard,
+    Compliant: r.compliant,
+    'Below target': r.nonCompliant,
+    rate: r.rate,
+    exposure: r.exposure,
+    isFramework: r.isFramework,
+  }))
+
+  const scoreData = SCORE_BUCKETS.map(b => ({
+    ...b,
+    count: filtered.filter(a => a.complianceScore >= b.min && a.complianceScore < b.max).length,
+  }))
+
+  const deptMap = new Map<string, { total: number; compliant: number }>()
+  for (const a of filtered) {
+    const d = deptMap.get(a.department) ?? { total: 0, compliant: 0 }
+    d.total++
+    if (a.complianceScore >= COMPLIANCE_THRESHOLD) d.compliant++
+    deptMap.set(a.department, d)
+  }
+  const deptData = Array.from(deptMap.entries())
+    .map(([department, d]) => ({ department, rate: Math.round((d.compliant / d.total) * 100), compliant: d.compliant, total: d.total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10)
+
+  const counts = {
+    all: filtered.length,
+    compliant: compliance.compliantCount,
+    below: compliance.nonCompliantCount,
+  }
 
   return (
     <div className="w-full">
       <PageHeader
         title="Compliance"
-        description="Which assets break which rules, where, and what it could cost"
+        description="The regulations your assets fall under, and how compliant your organisation is with each"
         homeHref="/welcome"
         showBackButton
         onBack={back}
@@ -122,83 +139,95 @@ export default function CompliancePage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               <Kpi
-                label="Non-compliant assets"
-                value={formatNumber(nonCompliant.length)}
-                sub={`${pct}% of ${filtered.length} assets`}
-                tone="text-danger-600"
-                info={<>Assets whose Compliance Score in your file is below {COMPLIANCE_THRESHOLD}.</>}
+                label="Compliance rate"
+                value={`${compliance.complianceRate}%`}
+                sub={`${formatNumber(compliance.compliantCount)} of ${formatNumber(filtered.length)} assets meet the target`}
+                tone={rateTone(compliance.complianceRate)}
+                info={`Share of assets whose Compliance Score is ${COMPLIANCE_THRESHOLD} or above.`}
               />
               <Kpi
-                label="Past end of support"
-                value={formatNumber(compliance.pastEolCount)}
-                sub="still in use, no longer patched"
-                tone="text-neutral-900"
-                info="Assets whose Last Date of Support has passed (or are marked end-of-life). They no longer receive safety or security fixes."
+                label="Regulations in scope"
+                value={compliance.regulations.length.toString()}
+                sub={`covering ${formatNumber(compliance.assetsInScope)} assets`}
+                info="The regulations that apply to your assets, based on each asset's type and region. These are the rules that can affect your organisation."
+              />
+              <Kpi
+                label="Average compliance score"
+                value={compliance.avgScore.toFixed(0)}
+                sub={`target: ${COMPLIANCE_THRESHOLD} or above`}
+                tone={compliance.avgScore >= COMPLIANCE_THRESHOLD ? 'text-success-600' : 'text-warning-600'}
+                info="Average of the Compliance Score column for the assets in this selection."
               />
               <Kpi
                 label="Potential fines"
                 value={formatMoney(compliance.fineExposure)}
-                sub={filters.standard === ALL ? 'across all regulations' : `${filters.standard} only`}
-                tone="text-danger-600"
-                info="Each non-compliant asset × the published fine per violation of every regulation that applies to its type and region. Frameworks (ISO 27001, SOC 2, NIST) carry no government fine."
-              />
-              <Kpi
-                label="Average compliance score"
-                value={avgScore.toFixed(0)}
-                sub={`target: ${COMPLIANCE_THRESHOLD} or above`}
-                tone={avgScore < COMPLIANCE_THRESHOLD ? 'text-warning-600' : 'text-success-600'}
-                info="Average of the Compliance Score column for the assets in this selection."
+                sub={`if the ${formatNumber(compliance.nonCompliantCount)} assets below target aren't fixed`}
+                tone={compliance.fineExposure > 0 ? 'text-danger-600' : 'text-success-600'}
+                info="Each asset below target × the published fine per violation of every regulation that applies to its type and region. Frameworks (ISO 27001, SOC 2, NIST) carry no government fine."
               />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Panel title="Compliance by region" info="Compliant vs non-compliant assets per region. Click a bar to filter the page to that region.">
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={regionData} layout="vertical" margin={{ left: 8, right: 16 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar maxBarSize={36} dataKey="Non-compliant" stackId="a" fill="#ef4444" cursor="pointer" onClick={(d: any) => toggle('region', d.region)} />
-                      <Bar maxBarSize={36} dataKey="Compliant" stackId="a" fill="#cbd5e1" radius={[0, 4, 4, 0]} cursor="pointer" onClick={(d: any) => toggle('region', d.region)} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </Panel>
-
               <Panel
-                title="Potential fines by regulation"
-                info="Fine exposure for each regulation that applies to your non-compliant assets. Click a bar to filter the page to that regulation."
+                title="Compliance by regulation"
+                info="For each regulation your assets fall under: how many assets it covers, and how many of those meet the target. Hover a bar for potential fines; click it to filter the page."
               >
-                {fineData.length === 0 ? (
-                  <p className="text-sm text-neutral-500 py-16 text-center">No non-compliant assets in this selection.</p>
+                {regulationData.length === 0 ? (
+                  <Empty>No regulations apply to the assets in this selection.</Empty>
                 ) : (
-                  <div className="h-64">
+                  <div style={{ height: Math.max(220, regulationData.length * 38 + 50) }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={fineData} layout="vertical" margin={{ left: 8, right: 16 }}>
+                      <BarChart data={regulationData} layout="vertical" margin={{ left: 8, right: 16 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" tickFormatter={v => formatMoney(v)} tick={{ fontSize: 11 }} />
-                        <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={(v: number, _n, p: any) => [`${formatMoney(v)} (${p.payload.count} assets)`, 'Potential fines']} />
-                        <Bar maxBarSize={36} dataKey="exposure" radius={[0, 4, 4, 0]} cursor="pointer" onClick={(d: any) => toggle('standard', d.standard)}>
-                          {fineData.map(d => (
-                            <Cell key={d.standard} fill={filters.standard === d.standard ? '#b91c1c' : '#f87171'} />
-                          ))}
-                        </Bar>
+                        <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                        <YAxis type="category" dataKey="name" width={76} tick={{ fontSize: 11 }} />
+                        <Tooltip
+                          content={({ active, payload }: any) => {
+                            if (!active || !payload?.length) return null
+                            const d = payload[0].payload
+                            return (
+                              <div className="bg-white border border-neutral-200 rounded-lg shadow-lg px-3 py-2 text-xs space-y-0.5">
+                                <p className="font-semibold text-neutral-900">{d.standard}</p>
+                                <p className="text-neutral-700">{d.rate}% compliant · {d.Compliant} of {d.Compliant + d['Below target']} assets</p>
+                                <p className="text-neutral-500">
+                                  {d.isFramework ? 'Framework: no government fine' : `Potential fines: ${formatMoney(d.exposure)}`}
+                                </p>
+                              </div>
+                            )
+                          }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="Compliant" stackId="a" fill="#22c55e" maxBarSize={24} cursor="pointer" onClick={(d: any) => toggle('standard', d.standard)} />
+                        <Bar dataKey="Below target" stackId="a" fill="#fca5a5" maxBarSize={24} radius={[0, 4, 4, 0]} cursor="pointer" onClick={(d: any) => toggle('standard', d.standard)} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 )}
               </Panel>
+
+              <Panel title="Compliance rate by region" info={`Share of each region's assets that meet the target of ${COMPLIANCE_THRESHOLD}. Click a bar to filter the page to that region.`}>
+                <div style={{ height: Math.max(220, regionData.length * 44 + 40) }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={regionData} layout="vertical" margin={{ left: 8, right: 24 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number, _n, p: any) => [`${v}% (${p.payload.compliant} of ${p.payload.total} assets)`, 'Compliant']} />
+                      <ReferenceLine x={90} stroke="#64748b" strokeDasharray="4 4" />
+                      <Bar dataKey="rate" maxBarSize={28} radius={[0, 4, 4, 0]} cursor="pointer" onClick={(d: any) => toggle('region', d.region)}>
+                        {regionData.map(d => (
+                          <Cell key={d.region} fill={rateColor(d.rate)} fillOpacity={filters.region === ALL || filters.region === d.region ? 1 : 0.35} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="text-xs text-neutral-500 mt-1">Dashed line: 90% compliance. Green 90%+, amber 75–89%, red below 75%.</p>
+              </Panel>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Panel
-                title="Compliance score distribution"
-                info={`How many assets fall in each score band. Red bands are below the compliance target of ${COMPLIANCE_THRESHOLD}.`}
-              >
+              <Panel title="Compliance score distribution" info={`How many assets fall in each score band. Bands from ${COMPLIANCE_THRESHOLD} up meet the target.`}>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={scoreData} margin={{ left: -16, right: 8 }}>
@@ -206,9 +235,9 @@ export default function CompliancePage() {
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                       <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                       <Tooltip formatter={(v: number) => [`${v} assets`, 'Assets']} />
-                      <Bar maxBarSize={36} dataKey="count" radius={[4, 4, 0, 0]}>
+                      <Bar dataKey="count" maxBarSize={56} radius={[4, 4, 0, 0]}>
                         {scoreData.map(d => (
-                          <Cell key={d.label} fill={d.failing ? '#ef4444' : '#22c55e'} />
+                          <Cell key={d.label} fill={d.color} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -216,31 +245,51 @@ export default function CompliancePage() {
                 </div>
               </Panel>
 
-              <Panel title="Non-compliant assets by department" info="Which teams own the most non-compliant assets. Click a bar to filter the page to that department.">
-                {deptData.length === 0 ? (
-                  <p className="text-sm text-neutral-500 py-16 text-center">No non-compliant assets in this selection.</p>
-                ) : (
-                  <div className="h-56">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={deptData} layout="vertical" margin={{ left: 8, right: 16 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                        <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                        <YAxis type="category" dataKey="department" width={120} tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={(v: number) => [`${v} assets`, 'Non-compliant']} />
-                        <Bar maxBarSize={36} dataKey="count" fill="#f97316" radius={[0, 4, 4, 0]} cursor="pointer" onClick={(d: any) => toggle('department', d.department)} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
+              <Panel title="Compliance rate by department" info="Share of each department's assets that meet the target. Click a bar to filter the page to that department.">
+                <div style={{ height: Math.max(224, deptData.length * 30 + 40) }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={deptData} layout="vertical" margin={{ left: 8, right: 24 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
+                      <YAxis type="category" dataKey="department" width={120} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number, _n, p: any) => [`${v}% (${p.payload.compliant} of ${p.payload.total} assets)`, 'Compliant']} />
+                      <Bar dataKey="rate" maxBarSize={20} radius={[0, 4, 4, 0]} cursor="pointer" onClick={(d: any) => toggle('department', d.department)}>
+                        {deptData.map(d => (
+                          <Cell key={d.department} fill={rateColor(d.rate)} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </Panel>
             </div>
 
             <Panel
-              title={`Non-compliant assets (${nonCompliant.length})`}
-              info="Every asset in this selection with a Compliance Score below the target, lowest score first. These are the assets to fix or replace first."
+              title="Assets in scope"
+              info="Every asset in this selection with its compliance score and the regulations that apply to it. Click an asset for full details."
+              actions={
+                <div className="flex gap-1" role="tablist" aria-label="Compliance status">
+                  {([
+                    ['all', 'All'],
+                    ['compliant', 'Compliant'],
+                    ['below', 'Below target'],
+                  ] as const).map(([k, label]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      role="tab"
+                      aria-selected={listView === k}
+                      onClick={() => setListView(k)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium ${listView === k ? 'bg-primary-600 text-white' : 'text-neutral-600 hover:bg-neutral-100'}`}
+                    >
+                      {label} <span className={listView === k ? 'text-primary-100' : 'text-neutral-400'}>{counts[k]}</span>
+                    </button>
+                  ))}
+                </div>
+              }
             >
-              {nonCompliant.length === 0 ? (
-                <p className="text-sm text-neutral-500 py-6 text-center">All assets in this selection meet the compliance target.</p>
+              {list.length === 0 ? (
+                <Empty>No assets here.</Empty>
               ) : (
                 <>
                   <div className="overflow-x-auto -mx-5">
@@ -252,27 +301,31 @@ export default function CompliancePage() {
                           <th className="px-3 py-2 font-medium">Region</th>
                           <th className="px-3 py-2 font-medium">Department</th>
                           <th className="px-3 py-2 font-medium text-right">Score</th>
-                          <th className="px-3 py-2 font-medium">Support ends</th>
+                          <th className="px-3 py-2 font-medium">Status</th>
                           <th className="px-5 py-2 font-medium">Regulations</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {nonCompliant.slice(0, visible).map(a => {
+                        {list.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map(a => {
                           const regs = getApplicableStandards(a.assetType, a.region as Region)
-                          const past = isPastEndOfLife(a)
+                          const ok = a.complianceScore >= COMPLIANCE_THRESHOLD
                           return (
                             <tr key={a.assetId} className="border-b border-neutral-100 hover:bg-neutral-50">
                               <td className="px-5 py-2">
-                                <p className="font-medium text-neutral-900">{a.assetId}</p>
-                                <p className="text-xs text-neutral-500 truncate max-w-[200px]">{a.productName}</p>
+                                <button type="button" onClick={() => setSelected(a)} className="text-left">
+                                  <span className="block font-medium text-primary-700 hover:underline">{a.assetId}</span>
+                                  <span className="block text-xs text-neutral-500 truncate max-w-[200px]">{a.productName}</span>
+                                </button>
                               </td>
                               <td className="px-3 py-2 text-neutral-700">{a.assetType}</td>
                               <td className="px-3 py-2 text-neutral-700">{shortRegion(a.region)}</td>
                               <td className="px-3 py-2 text-neutral-700">{a.department}</td>
-                              <td className="px-3 py-2 text-right font-semibold text-danger-600">{a.complianceScore}</td>
-                              <td className={`px-3 py-2 whitespace-nowrap ${past ? 'text-danger-600 font-medium' : 'text-neutral-700'}`}>
-                                {a.lastDateOfSupport}
-                                {past && ' (ended)'}
+                              <td className={`px-3 py-2 text-right font-semibold ${ok ? 'text-success-600' : 'text-danger-600'}`}>{a.complianceScore}</td>
+                              <td className="px-3 py-2">
+                                <div className="flex flex-wrap gap-1">
+                                  <Pill tone={ok ? 'success' : 'danger'}>{ok ? 'Compliant' : 'Below target'}</Pill>
+                                  {isPastEndOfLife(a) && <Pill tone="neutral">Support ended</Pill>}
+                                </div>
                               </td>
                               <td className="px-5 py-2">
                                 <div className="flex flex-wrap gap-1">
@@ -283,7 +336,7 @@ export default function CompliancePage() {
                                       <span
                                         key={r}
                                         className={`text-[11px] px-1.5 py-0.5 rounded ${
-                                          filters.standard === r ? 'bg-danger-500 text-white' : 'bg-neutral-100 text-neutral-700'
+                                          filters.standard === r ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-700'
                                         }`}
                                       >
                                         {r}
@@ -298,23 +351,15 @@ export default function CompliancePage() {
                       </tbody>
                     </table>
                   </div>
-                  {visible < nonCompliant.length && (
-                    <div className="text-center pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setVisible(v => v + PAGE_SIZE)}
-                        className="text-sm font-medium text-primary-600 hover:underline"
-                      >
-                        Show {Math.min(PAGE_SIZE, nonCompliant.length - visible)} more
-                      </button>
-                    </div>
-                  )}
+                  <Pagination page={page} pageSize={PAGE_SIZE} total={list.length} onPage={setPage} />
                 </>
               )}
             </Panel>
           </>
         )}
       </div>
+
+      <AssetDrawer asset={selected} onClose={() => setSelected(null)} />
     </div>
   )
 }

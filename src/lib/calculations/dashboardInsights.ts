@@ -135,6 +135,34 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
     .sort((a, b) => b.exposure - a.exposure || b.count - a.count)
   const fineExposure = standards.reduce((s, x) => s + x.exposure, 0)
 
+  const scope = new Map<ComplianceStandard, { inScope: number; compliant: number }>()
+  let assetsInScope = 0
+  for (const a of assets) {
+    const stds = standardsFor(a).filter(s => selectedStandard === ALL || s === selectedStandard)
+    if (stds.length) assetsInScope++
+    for (const s of stds) {
+      const r = scope.get(s) ?? { inScope: 0, compliant: 0 }
+      r.inScope++
+      if (a.complianceScore >= COMPLIANCE_THRESHOLD) r.compliant++
+      scope.set(s, r)
+    }
+  }
+  const regulations = Array.from(scope.entries())
+    .map(([standard, r]) => {
+      const info = COMPLIANCE_STANDARDS[standard]
+      return {
+        standard,
+        name: info.name,
+        inScope: r.inScope,
+        compliant: r.compliant,
+        nonCompliant: r.inScope - r.compliant,
+        rate: Math.round((r.compliant / r.inScope) * 100),
+        exposure: (r.inScope - r.compliant) * info.finePerViolation,
+        isFramework: info.finePerViolation === 0,
+      }
+    })
+    .sort((a, b) => b.inScope - a.inScope)
+
   const employees = sumProvided(poorCondition, a => a.employeesAffected)
   const allEmployees = sumProvided(assets, a => a.employeesAffected)
   const healthIssues = sumProvided(poorCondition, a => a.healthIssuesPerYear)
@@ -201,10 +229,12 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
       compliantCount: assets.length - nonCompliant.length,
       complianceRate: assets.length ? Math.round(((assets.length - nonCompliant.length) / assets.length) * 100) : 0,
       avgScore: avgComplianceScore,
+      assetsInScope,
+      regulations,
       fineExposure,
       standards,
       regions: Array.from(byRegion.entries())
-        .map(([region, v]) => ({ region, ...v }))
+        .map(([region, v]) => ({ region, ...v, compliant: v.total - v.nonCompliant, rate: Math.round(((v.total - v.nonCompliant) / v.total) * 100) }))
         .sort((a, b) => b.nonCompliant - a.nonCompliant),
     },
     health: {
