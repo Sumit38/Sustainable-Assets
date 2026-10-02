@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth/authContext'
+import { PRODUCT_NAME, TAGLINE } from '@/lib/brand'
 import {
   BarChart3,
   AlertTriangle,
@@ -102,13 +103,11 @@ export function Sidebar({ collapsed, onToggleCollapsed }: { collapsed: boolean; 
         } ${desktopVisible ? 'md:translate-x-0' : ''}`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center h-20 pl-10 border-b border-neutral-800 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-lg">AssetPulse</span>
-          </div>
+        <div className="flex items-center h-20 pl-16 pr-4 border-b border-neutral-800 flex-shrink-0">
+          <span className="leading-tight">
+            <span className="block font-bold text-lg">{PRODUCT_NAME}</span>
+            <span className="block text-[11px] text-neutral-400">{TAGLINE}</span>
+          </span>
         </div>
 
         {/* Navigation */}

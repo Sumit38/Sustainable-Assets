@@ -1,559 +1,383 @@
 'use client'
 
-import React from 'react'
+import React, { ReactNode } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/common/Button'
-import { Card, CardBody } from '@/components/common/Card'
-import { Badge } from '@/components/common/Badge'
 import {
-  Package,
-  AlertTriangle,
   BarChart3,
-  Shield,
-  TrendingUp,
-  CheckCircle,
-  DollarSign,
-  Users,
+  ShieldCheck,
+  HeartPulse,
   Leaf,
-  Clock,
-  Battery,
-  Droplet,
+  BatteryCharging,
+  Upload,
+  Cpu,
+  ListChecks,
+  Factory,
+  Building2,
+  Stethoscope,
+  Truck,
+  Zap,
+  Eye,
+  ArrowRight,
+  FileSpreadsheet,
+  Globe2,
+  Scale,
+  CheckCircle2,
 } from 'lucide-react'
+import { PRODUCT_NAME, TAGLINE } from '@/lib/brand'
+
+const btnPrimary =
+  'inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
+const btnGhost =
+  'inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-neutral-300 bg-white text-neutral-800 font-semibold hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500'
+
+function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
+  return (
+    <div className="max-w-3xl mb-10">
+      <p className="text-sm font-semibold uppercase tracking-wider text-primary-600 mb-2">{eyebrow}</p>
+      <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">{title}</h2>
+      {sub && <p className="text-lg text-neutral-600 mt-3">{sub}</p>}
+    </div>
+  )
+}
+
+const PILLARS: Array<{ icon: ReactNode; tone: string; title: string; question: string; answer: string }> = [
+  {
+    icon: <ShieldCheck className="w-6 h-6" />,
+    tone: 'bg-success-50 text-success-600',
+    title: 'Compliance',
+    question: 'Which regulations do our assets fall under, and how compliant are we?',
+    answer: 'Compliance rate by region, regulation and department, with the potential fines if gaps aren’t closed.',
+  },
+  {
+    icon: <HeartPulse className="w-6 h-6" />,
+    tone: 'bg-warning-50 text-warning-600',
+    title: 'Employee health',
+    question: 'Who is working with worn-out equipment?',
+    answer: 'Employees exposed to assets in poor condition, so replacements that affect people come first.',
+  },
+  {
+    icon: <Leaf className="w-6 h-6" />,
+    tone: 'bg-primary-50 text-primary-600',
+    title: 'Sustainability',
+    question: 'What do over-used assets cost the planet, and what would replacing them save?',
+    answer: 'Scope 1, 2 and 3 emissions and electricity, today versus after replacement, plus landfill methane.',
+  },
+  {
+    icon: <BatteryCharging className="w-6 h-6" />,
+    tone: 'bg-sky-50 text-sky-600',
+    title: 'Lithium recovery',
+    question: 'How much lithium can our retiring devices return?',
+    answer: 'Recoverable lithium from laptops, phones, UPS units and EVs, and the mining emissions it avoids.',
+  },
+]
+
+const STEPS = [
+  {
+    icon: <Upload className="w-5 h-5" />,
+    title: 'Upload your asset register',
+    text: 'Use the CSV template: asset type, location, support dates and compliance score. Add optional columns for employees, costs, power and emissions to unlock more insight.',
+  },
+  {
+    icon: <Cpu className="w-5 h-5" />,
+    title: 'AssetPulse connects the dots',
+    text: 'Each asset is checked for end of support, mapped to the regulations of its type and region, and given its Scope 1/2/3 footprint and lithium content.',
+  },
+  {
+    icon: <ListChecks className="w-5 h-5" />,
+    title: 'Act on one shared picture',
+    text: 'Prioritised alerts, a replacement plan with predicted savings, a justification workflow for exceptions and a printable executive report.',
+  },
+]
+
+const VERTICALS = [
+  { icon: <Factory className="w-5 h-5" />, name: 'Manufacturing' },
+  { icon: <Building2 className="w-5 h-5" />, name: 'Facilities & real estate' },
+  { icon: <Stethoscope className="w-5 h-5" />, name: 'Healthcare networks' },
+  { icon: <Truck className="w-5 h-5" />, name: 'Logistics' },
+  { icon: <Zap className="w-5 h-5" />, name: 'Energy & utilities' },
+]
+
+const BUYERS = [
+  { role: 'COO / Head of Operations', gets: 'Which assets need action now, and where' },
+  { role: 'CFO / Finance transformation', gets: 'Replacement budget by quarter and fine exposure' },
+  { role: 'Chief Sustainability Officer / ESG', gets: 'Scope 1/2/3 today vs after replacement' },
+  { role: 'Chief Risk, Compliance or Facilities Officer', gets: 'Compliance rate by regulation and region' },
+]
+
+const CHAMPIONS = [
+  { role: 'Asset / facilities manager', gets: 'Full inventory, alerts and replacement list' },
+  { role: 'EHS and compliance manager', gets: 'Non-compliant assets and justification workflow' },
+  { role: 'Sustainability analyst', gets: 'Emissions by country and transparent formulas' },
+  { role: 'Procurement & lifecycle planning', gets: 'End-of-support timeline and recovery routes' },
+]
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white border-b border-neutral-200 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <BarChart3 className="w-8 h-8 text-primary-600" />
-              <span className="text-xl font-bold text-neutral-900">AssetPulse</span>
-            </div>
-            <div className="flex gap-4">
-              <Link href="/auth/signin">
-                <Button variant="ghost">Sign In</Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button variant="primary">Get Started</Button>
-              </Link>
-            </div>
+    <div className="min-h-screen bg-white text-neutral-900">
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2 min-w-0">
+            <span className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0">
+              <BarChart3 className="w-5 h-5 text-white" />
+            </span>
+            <span className="leading-tight min-w-0">
+              <span className="block font-bold">{PRODUCT_NAME}</span>
+              <span className="hidden sm:block text-xs text-neutral-500 truncate">{TAGLINE}</span>
+            </span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/auth/signin" className="px-4 py-2 rounded-lg text-sm font-semibold text-neutral-700 hover:bg-neutral-100">
+              Sign in
+            </Link>
+            <Link href="/auth/signup" className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary-600 text-white hover:bg-primary-700">
+              Get started
+            </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-40 pb-32 bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-72 h-72 bg-primary-400 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 left-10 w-96 h-96 bg-primary-500 rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <p className="text-primary-200 text-sm font-semibold mb-6 uppercase tracking-wider">Enterprise Asset Intelligence</p>
-          <h1 className="text-6xl lg:text-7xl font-bold mb-8 leading-tight">
-            Know Your Assets.<br/><span className="text-primary-300">Control Your Future.</span>
-          </h1>
-          <p className="text-xl text-primary-100 mb-12 leading-relaxed max-w-3xl mx-auto">
-            Real-time health monitoring, predictive failure analysis, and automated compliance tracking.
-            Make data-driven asset decisions that protect employee health, reduce costs, and ensure regulatory compliance.
-          </p>
-
-          <div className="flex gap-4 flex-wrap justify-center mb-12">
-            <Link href="/auth/signup">
-              <Button
-                variant="primary"
-                size="lg"
-                className="bg-white text-primary-900 hover:bg-primary-50"
-              >
-                Start Free Trial
-              </Button>
-            </Link>
-            <Link href="#features">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="border-white text-white hover:bg-white/10"
-              >
-                See How It Works
-              </Button>
-            </Link>
-          </div>
-
-          <p className="text-primary-200 text-sm">✓ No credit card required • Deploy in minutes • Full compliance tracking</p>
-        </div>
-      </section>
-
-      {/* The Problem */}
-      <section className="py-20 bg-neutral-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-neutral-900 mb-4">
-              The True Cost of Ignoring Asset Health
-            </h2>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-              Most organizations waste 25-40% of their asset budget on unexpected failures, emergency repairs, and compliance violations
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 bg-white border border-primary-200 rounded-full px-3 py-1 mb-6">
+              <Eye className="w-4 h-4" /> Asset intelligence for multi-site organisations
             </p>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+              From asset visibility <br className="hidden sm:block" />
+              to <span className="text-primary-600">asset intelligence</span>
+            </h1>
+            <p className="text-lg text-neutral-600 mt-6 max-w-xl">
+              {PRODUCT_NAME} turns your asset register into one view of lifecycle risk, compliance, employee health and carbon
+              impact, so operations, finance and sustainability teams decide from the same numbers.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-8">
+              <Link href="/auth/signup" className={btnPrimary}>
+                Get started <ArrowRight className="w-4 h-4" />
+              </Link>
+              <a href="#how-it-works" className={btnGhost}>
+                See how it works
+              </a>
+            </div>
+            <ul className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-neutral-600">
+              {['Works from a CSV you already have', 'Every number traceable to its source', 'Filters by region, regulation, team'].map(t => (
+                <li key={t} className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-success-600 flex-shrink-0 mt-0.5" />
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="border-l-4 border-l-danger-600 hover:shadow-lg transition-shadow">
-              <CardBody>
-                <div className="flex items-start justify-between mb-4">
-                  <DollarSign className="w-12 h-12 text-danger-600" />
-                  <Badge variant="danger">Financial</Badge>
-                </div>
-                <p className="text-sm text-neutral-600 mb-2">Unexpected Failures</p>
-                <p className="text-3xl font-bold text-danger-600 mb-2">$2.5M+</p>
-                <p className="text-xs text-neutral-500">Annual cost per 1,000 assets across emergency repairs, replacement, and lost productivity</p>
-              </CardBody>
-            </Card>
-
-            <Card className="border-l-4 border-l-warning-600 hover:shadow-lg transition-shadow">
-              <CardBody>
-                <div className="flex items-start justify-between mb-4">
-                  <Users className="w-12 h-12 text-warning-600" />
-                  <Badge variant="warning">Health</Badge>
-                </div>
-                <p className="text-sm text-neutral-600 mb-2">Employee Health Impact</p>
-                <p className="text-3xl font-bold text-warning-600 mb-2">45%</p>
-                <p className="text-xs text-neutral-500">Increase in musculoskeletal disorders and ergonomic injuries from aging equipment</p>
-              </CardBody>
-            </Card>
-
-            <Card className="border-l-4 border-l-danger-600 hover:shadow-lg transition-shadow">
-              <CardBody>
-                <div className="flex items-start justify-between mb-4">
-                  <Clock className="w-12 h-12 text-danger-600" />
-                  <Badge variant="danger">Productivity</Badge>
-                </div>
-                <p className="text-sm text-neutral-600 mb-2">Unplanned Downtime</p>
-                <p className="text-3xl font-bold text-danger-600 mb-2">72 hrs/yr</p>
-                <p className="text-xs text-neutral-500">Per employee lost to equipment failures, outages, and emergency replacements</p>
-              </CardBody>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-            <Card>
-              <CardBody>
-                <h3 className="font-semibold text-neutral-900 mb-3">Compliance & Risk Exposure</h3>
-                <ul className="space-y-2 text-sm text-neutral-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-danger-600 font-bold">•</span>
-                    <span>GDPR, HIPAA, ISO 27001 violations ($5K-$50K per incident)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-danger-600 font-bold">•</span>
-                    <span>Inadequate audit trails and asset documentation</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-danger-600 font-bold">•</span>
-                    <span>Data breach risk from aging security infrastructure</span>
-                  </li>
-                </ul>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <h3 className="font-semibold text-neutral-900 mb-3">Environmental Impact</h3>
-                <ul className="space-y-2 text-sm text-neutral-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-success-600 font-bold">•</span>
-                    <span>120+ kg CO₂e per aged asset annually (Scope 2 & 3)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-success-600 font-bold">•</span>
-                    <span>Methane emissions from landfill disposal (28x CO₂ impact)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-success-600 font-bold">•</span>
-                    <span>No visibility into reuse/recycling opportunities</span>
-                  </li>
-                </ul>
-              </CardBody>
-            </Card>
+          <div className="relative">
+            <div className="rounded-2xl border border-neutral-200 bg-white shadow-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-semibold text-neutral-900">Dashboard preview</p>
+                <span className="text-[11px] font-medium text-neutral-500 bg-neutral-100 rounded-full px-2 py-0.5">Sample data</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icon: <ShieldCheck className="w-4 h-4" />, tone: 'text-warning-600 bg-warning-50', label: 'Compliance', value: '79%', sub: 'assets meet target' },
+                  { icon: <HeartPulse className="w-4 h-4" />, tone: 'text-warning-600 bg-warning-50', label: 'Employee health', value: '1.2K', sub: 'employees exposed' },
+                  { icon: <Leaf className="w-4 h-4" />, tone: 'text-success-600 bg-success-50', label: 'Sustainability', value: '−22%', sub: 'CO₂e after replacement' },
+                  { icon: <BatteryCharging className="w-4 h-4" />, tone: 'text-primary-600 bg-primary-50', label: 'Lithium', value: '0.61 kg', sub: 'recoverable now' },
+                ].map(c => (
+                  <div key={c.label} className="rounded-xl border border-neutral-200 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-7 h-7 rounded-md flex items-center justify-center ${c.tone}`}>{c.icon}</span>
+                      <span className="text-xs font-medium text-neutral-600">{c.label}</span>
+                    </div>
+                    <p className="text-2xl font-bold mt-2">{c.value}</p>
+                    <p className="text-xs text-neutral-500">{c.sub}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 rounded-xl border border-neutral-200 p-3">
+                <p className="text-xs font-medium text-neutral-600 mb-2">Compliance by region</p>
+                {[
+                  ['Asia Pacific', 81],
+                  ['North America', 80],
+                  ['Europe', 78],
+                ].map(([r, v]) => (
+                  <div key={r as string} className="flex items-center gap-2 text-xs mb-1.5">
+                    <span className="w-24 text-neutral-600">{r}</span>
+                    <span className="flex-1 h-2 rounded-full bg-neutral-100 overflow-hidden">
+                      <span className="block h-full bg-warning-500 rounded-full" style={{ width: `${v}%` }} />
+                    </span>
+                    <span className="w-8 text-right font-semibold">{v}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Solution Section */}
-      <section className="py-20">
+      {/* Problem */}
+      <section className="py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-12 text-neutral-900">How We Solve This</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card>
-              <CardBody>
-                <div className="bg-primary-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                  <BarChart3 className="w-6 h-6 text-primary-600" />
-                </div>
-                <h3 className="text-lg font-semibold mb-3 text-neutral-900">Real-Time Monitoring</h3>
-                <p className="text-neutral-600">
-                  Track 500+ asset metrics in real-time. Get instant alerts before problems occur.
-                </p>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <div className="bg-success-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                  <TrendingUp className="w-6 h-6 text-success-600" />
-                </div>
-                <h3 className="text-lg font-semibold mb-3 text-neutral-900">Predictive Analytics</h3>
-                <p className="text-neutral-600">
-                  AI predicts failures 6-12 months in advance. Plan replacements with confidence.
-                </p>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <div className="bg-danger-100 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                  <DollarSign className="w-6 h-6 text-danger-600" />
-                </div>
-                <h3 className="text-lg font-semibold mb-3 text-neutral-900">Cost Optimization</h3>
-                <p className="text-neutral-600">
-                  Optimize replacement budgets. Save 35% on maintenance and emergency repairs.
-                </p>
-              </CardBody>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Key Metrics Section */}
-      <section className="py-20 bg-neutral-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-12 text-neutral-900">What You'll Achieve</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { icon: '💰', metric: '35%', description: 'Cost Reduction' },
-              { icon: '⏱️', metric: '40%', description: 'Less Downtime' },
-              { icon: '❤️', metric: '50%', description: 'Better Employee Health' },
-              { icon: '♻️', metric: '60%', description: 'Carbon Reduction' },
-            ].map((item) => (
-              <Card key={item.description}>
-                <CardBody className="text-center">
-                  <div className="text-4xl mb-3">{item.icon}</div>
-                  <p className="text-3xl font-bold text-primary-600 mb-2">{item.metric}</p>
-                  <p className="text-neutral-600">{item.description}</p>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Deep Dive */}
-      <section id="features" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-12 text-neutral-900">Powerful Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <SectionHeader
+            eyebrow="The problem"
+            title="Asset, compliance and sustainability pain show up together"
+            sub="In most organisations they’re tracked in different spreadsheets by different teams, so nobody sees the full cost of keeping an asset too long."
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                icon: <AlertTriangle className="w-8 h-8" />,
-                title: 'Smart Alerts',
-                description:
-                  'AI-powered alerts notify you before assets fail. Multi-severity levels with customizable thresholds.',
+                icon: <FileSpreadsheet className="w-6 h-6" />,
+                title: 'Assets outlive their support',
+                text: 'Equipment stays in service after vendor support ends: no security patches, more failures, and no plan for what replaces it.',
               },
               {
-                icon: <Shield className="w-8 h-8" />,
-                title: 'Health Compliance',
-                description:
-                  'Auto-track ergonomic standards, safety compliance, and health regulations across all assets.',
+                icon: <Scale className="w-6 h-6" />,
+                title: 'Audit evidence is scattered',
+                text: 'Which regulations apply to which asset, in which country, is rarely in one place, so exposure is only discovered during an audit.',
               },
               {
-                icon: <TrendingUp className="w-8 h-8" />,
-                title: 'Predictive Planning',
-                description:
-                  'Forecast replacement needs 6-12 months ahead. Optimize capital expenditure with precision.',
+                icon: <Globe2 className="w-6 h-6" />,
+                title: 'Carbon reporting misses the asset estate',
+                text: 'Emissions from old, inefficient equipment and its disposal are hard to quantify, and so are the savings from replacing it.',
               },
-              {
-                icon: <Leaf className="w-8 h-8" />,
-                title: 'Sustainability Tracking',
-                description:
-                  'Monitor carbon footprint, scope 2 & 3 emissions, and methane impact from landfill disposal.',
-              },
-              {
-                icon: <BarChart3 className="w-8 h-8" />,
-                title: 'Executive Dashboards',
-                description:
-                  'Real-time KPIs with business impact metrics. Make data-driven decisions instantly.',
-              },
-              {
-                icon: <Package className="w-8 h-8" />,
-                title: 'Multi-Category Support',
-                description:
-                  'Track furniture, hardware, software, real estate, vehicles, infrastructure, and more.',
-              },
-            ].map((feature, idx) => (
-              <div key={idx} className="flex gap-6">
-                <div className="text-primary-600 flex-shrink-0">{feature.icon}</div>
-                <div>
-                  <h3 className="text-xl font-semibold text-neutral-900 mb-2">{feature.title}</h3>
-                  <p className="text-neutral-600">{feature.description}</p>
-                </div>
+            ].map(p => (
+              <div key={p.title} className="rounded-xl border border-neutral-200 p-6">
+                <span className="w-11 h-11 rounded-lg bg-danger-50 text-danger-600 flex items-center justify-center">{p.icon}</span>
+                <h3 className="text-lg font-semibold mt-4">{p.title}</h3>
+                <p className="text-neutral-600 mt-2">{p.text}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* DLE Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-50 to-primary-100">
+      {/* Pillars */}
+      <section className="py-16 lg:py-20 bg-neutral-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <Battery className="w-10 h-10 text-primary-600" />
-                <span className="text-primary-600 font-semibold text-lg">Direct Lithium Extraction</span>
-              </div>
-              <h2 className="text-4xl font-bold mb-6 text-neutral-900">
-                Recover Critical Materials. Maximize Recovery Value.
-              </h2>
-              <p className="text-lg text-neutral-700 mb-6">
-                When assets reach end-of-life, they contain valuable materials—lithium, cobalt, nickel, and rare earth elements—worth recovering. Direct Lithium Extraction (DLE) is a faster, cleaner alternative to traditional mining that extracts lithium from assets in hours instead of months.
-              </p>
-
-              <div className="space-y-4 mb-8">
-                <div className="flex gap-4">
-                  <Droplet className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-1">95% Less Water</h4>
-                    <p className="text-sm text-neutral-600">DLE reduces water consumption vs. traditional lithium mining</p>
-                  </div>
+          <SectionHeader
+            eyebrow="What you get"
+            title="One upload. Answers in four areas."
+            sub="Each answer comes with filters by region, regulation, asset type and department, and a drill-down to the individual assets behind it."
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {PILLARS.map(p => (
+              <div key={p.title} className="rounded-xl bg-white border border-neutral-200 p-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className={`w-11 h-11 rounded-lg flex items-center justify-center ${p.tone}`}>{p.icon}</span>
+                  <h3 className="text-lg font-semibold">{p.title}</h3>
                 </div>
-
-                <div className="flex gap-4">
-                  <CheckCircle className="w-6 h-6 text-success-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-1">73% Lower Carbon</h4>
-                    <p className="text-sm text-neutral-600">Reduces embodied carbon vs. primary lithium mining</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <Clock className="w-6 h-6 text-warning-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-1">Hours vs. 2 Years</h4>
-                    <p className="text-sm text-neutral-600">Extract lithium in hours instead of waiting months/years</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <DollarSign className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-1">Recover Value</h4>
-                    <p className="text-sm text-neutral-600">Lock in pricing before material costs rise 18-24% in 12 months</p>
-                  </div>
-                </div>
+                <p className="mt-4 font-medium text-neutral-900">“{p.question}”</p>
+                <p className="mt-2 text-neutral-600">{p.answer}</p>
               </div>
-
-              <div className="bg-white rounded-lg p-6 border-l-4 border-l-primary-600 mb-8">
-                <h4 className="font-semibold text-neutral-900 mb-3">Why This Matters for Your Organization</h4>
-                <ul className="space-y-2 text-sm text-neutral-600">
-                  <li className="flex gap-2">
-                    <span className="text-primary-600 font-bold">•</span>
-                    <span>Supply chain concentration: 72% of lithium from China/South America</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-primary-600 font-bold">•</span>
-                    <span>Price risk: Lithium prices projected to rise 18-24% in 12 months</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-primary-600 font-bold">•</span>
-                    <span>Asset aging: Many organizations don't know lithium content in aging hardware</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-primary-600 font-bold">•</span>
-                    <span>Sustainability: Replacing primary mining reduces Scope 3 emissions</span>
-                  </li>
-                </ul>
-              </div>
-
-              <Link href="/auth/signup">
-                <Button variant="primary" size="lg" className="w-full md:w-auto">
-                  Explore DLE Analytics
-                </Button>
-              </Link>
-            </div>
-
-            <div className="space-y-6">
-              <Card className="bg-gradient-to-br from-success-50 to-success-100 border-success-200">
-                <CardBody>
-                  <div className="text-4xl font-bold text-success-600 mb-2">45.2 kg</div>
-                  <p className="text-sm font-semibold text-neutral-700 mb-1">Recoverable Lithium</p>
-                  <p className="text-xs text-neutral-600">From typical 1,000-asset portfolio</p>
-                </CardBody>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-warning-50 to-warning-100 border-warning-200">
-                <CardBody>
-                  <div className="text-4xl font-bold text-warning-600 mb-2">$1,240</div>
-                  <p className="text-sm font-semibold text-neutral-700 mb-1">Current Recovery Value</p>
-                  <p className="text-xs text-neutral-600">At current market rates</p>
-                </CardBody>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200">
-                <CardBody>
-                  <div className="text-4xl font-bold text-primary-600 mb-2">+$297</div>
-                  <p className="text-sm font-semibold text-neutral-700 mb-1">Projected Upside (22%)</p>
-                  <p className="text-xs text-neutral-600">In 12-month window</p>
-                </CardBody>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-                <CardBody>
-                  <div className="text-4xl font-bold text-green-600 mb-2">450 kg</div>
-                  <p className="text-sm font-semibold text-neutral-700 mb-1">CO₂e Savings</p>
-                  <p className="text-xs text-neutral-600">vs. primary mining</p>
-                </CardBody>
-              </Card>
-
-              <div className="bg-white rounded-lg p-6 border border-neutral-200">
-                <h4 className="font-semibold text-neutral-900 mb-3">AssetPulse Advantage</h4>
-                <p className="text-sm text-neutral-600 mb-3">
-                  Our platform automatically identifies which assets contain lithium and other critical materials, assesses their condition, and determines optimal recovery timing.
-                </p>
-                <ul className="space-y-2 text-xs text-neutral-600">
-                  <li>✓ Material composition tracking</li>
-                  <li>✓ EOL pathway recommendations</li>
-                  <li>✓ Recovery value projections</li>
-                  <li>✓ Environmental impact quantification</li>
-                  <li>✓ Supply chain risk assessment</li>
-                </ul>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ROI Calculator Teaser */}
-      <section className="py-20 bg-primary-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">See Your Potential Savings</h2>
-          <p className="text-xl mb-8 text-primary-100">
-            Organizations save an average of $125K per year per 500 assets by optimizing maintenance
-            and avoiding failure-driven replacements.
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Link href="/auth/signup">
-              <Button variant="primary" size="lg" className="bg-white text-primary-600 hover:bg-primary-50">
-                Calculate Your Savings
-              </Button>
-            </Link>
-            <a href="#features">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="border-2 border-white text-white hover:bg-primary-700"
-              >
-                Learn More
-              </Button>
-            </a>
+      {/* How it works */}
+      <section id="how-it-works" className="py-16 lg:py-20 scroll-mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionHeader eyebrow="How it works" title="From spreadsheet to decision in three steps" />
+          <ol className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {STEPS.map((s, i) => (
+              <li key={s.title} className="relative rounded-xl border border-neutral-200 p-6">
+                <span className="absolute -top-3 left-6 text-xs font-bold text-white bg-primary-600 rounded-full px-2.5 py-1">Step {i + 1}</span>
+                <span className="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center mt-2">{s.icon}</span>
+                <h3 className="text-lg font-semibold mt-4">{s.title}</h3>
+                <p className="text-neutral-600 mt-2">{s.text}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* Who it's for */}
+      <section className="py-16 lg:py-20 bg-neutral-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionHeader
+            eyebrow="Who it’s for"
+            title="Built for mid-size and large organisations"
+            sub="Multiple sites, large asset inventories, formal audit processes and sustainability targets."
+          />
+          <div className="flex flex-wrap gap-3 mb-10">
+            {VERTICALS.map(v => (
+              <span key={v.name} className="inline-flex items-center gap-2 rounded-full bg-white border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-800">
+                <span className="text-primary-600">{v.icon}</span>
+                {v.name}
+              </span>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[
+              { title: 'For leadership', list: BUYERS },
+              { title: 'For the teams who run it day to day', list: CHAMPIONS },
+            ].map(g => (
+              <div key={g.title} className="rounded-xl bg-white border border-neutral-200 p-6 shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">{g.title}</h3>
+                <ul className="divide-y divide-neutral-100">
+                  {g.list.map(b => (
+                    <li key={b.role} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                      <span className="font-medium text-neutral-900">{b.role}</span>
+                      <span className="text-sm text-neutral-600 sm:text-right">{b.gets}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-12 text-center border-2 border-primary-200">
-            <h2 className="text-4xl font-bold mb-4 text-neutral-900">Ready to Transform Your Operations?</h2>
-            <p className="text-lg text-neutral-600 mb-8">
-              Join 200+ organizations using AssetPulse to save millions and improve employee wellness.
+      {/* Transparency */}
+      <section className="py-16 lg:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <SectionHeader
+              eyebrow="Transparent by design"
+              title="No black box. Every figure shows where it came from."
+              sub="Auditors and ESG teams need to defend numbers, not just see them. AssetPulse labels every input and publishes every formula."
+            />
+          </div>
+          <div className="rounded-xl border border-neutral-200 p-6 space-y-4">
+            {[
+              { tag: 'From your file', tone: 'bg-success-50 text-success-700', text: 'Your own values always come first: compliance scores, employees, costs, power and emissions.' },
+              { tag: 'Reference data', tone: 'bg-primary-50 text-primary-700', text: 'Published fines, national grid factors and typical device specifications fill gaps, clearly labelled.' },
+              { tag: 'Fixed rule', tone: 'bg-neutral-100 text-neutral-700', text: 'Thresholds such as the compliance target are stated openly in the Logic Library.' },
+            ].map(r => (
+              <div key={r.tag} className="flex gap-3">
+                <span className={`h-fit text-[11px] font-semibold rounded-full px-2 py-0.5 whitespace-nowrap ${r.tone}`}>{r.tag}</span>
+                <p className="text-neutral-700">{r.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="pb-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl bg-gradient-to-br from-primary-700 to-primary-900 text-white p-10 sm:p-12 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold">Start with the asset register you already have</h2>
+            <p className="text-primary-100 mt-4 text-lg max-w-2xl mx-auto">
+              Upload it once and see your compliance position, the people and emissions affected by ageing assets, and what replacing them would change.
             </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <Link href="/auth/signup">
-                <Button variant="primary" size="lg">
-                  Start Your Free Trial
-                </Button>
+            <div className="flex flex-wrap gap-3 justify-center mt-8">
+              <Link href="/auth/signup" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-white text-primary-800 font-semibold hover:bg-primary-50">
+                Get started <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link href="/auth/signin">
-                <Button variant="secondary" size="lg">
-                  Sign In to Dashboard
-                </Button>
+              <Link href="/auth/signin" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-white/40 text-white font-semibold hover:bg-white/10">
+                Sign in
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-neutral-900 text-neutral-300 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <BarChart3 className="w-6 h-6 text-primary-400" />
-                <span className="font-bold text-white">AssetPulse</span>
-              </div>
-              <p className="text-sm text-neutral-400">
-                Professional asset health monitoring and sustainability tracking.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#features" className="hover:text-primary-400">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-primary-400">
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-primary-400">
-                    Security
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#" className="hover:text-primary-400">
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-primary-400">
-                    Contact
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-primary-400">
-                    Blog
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li>
-                  <a href="#" className="hover:text-primary-400">
-                    Privacy
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-primary-400">
-                    Terms
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-neutral-800 pt-8 text-center text-sm text-neutral-400">
-            <p>&copy; 2026 AssetPulse. All rights reserved.</p>
-          </div>
+      <footer className="border-t border-neutral-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-neutral-500">
+          <p className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-primary-600" />
+            <span className="font-semibold text-neutral-700">{PRODUCT_NAME}</span> — {TAGLINE}
+          </p>
+          <p>&copy; {new Date().getFullYear()} {PRODUCT_NAME}</p>
         </div>
       </footer>
     </div>

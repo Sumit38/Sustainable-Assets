@@ -1,247 +1,184 @@
 'use client'
 
-import React from 'react'
+import React, { ReactNode, useMemo } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/common/Button'
-import { Card, CardBody } from '@/components/common/Card'
-import { Package, AlertTriangle, BarChart3, Shield, TrendingUp, CheckCircle, Brain, Zap, Target, Lightbulb } from 'lucide-react'
+import {
+  BarChart3,
+  ShieldCheck,
+  HeartPulse,
+  Leaf,
+  BatteryCharging,
+  Upload,
+  FileSpreadsheet,
+  LayoutDashboard,
+  ArrowRight,
+  BookOpen,
+} from 'lucide-react'
+import { useDashboard } from '@/lib/context/dashboardContext'
+import { useAuth } from '@/lib/auth/authContext'
+import { computeInsights, formatMoney, formatNumber, ALL } from '@/lib/calculations/dashboardInsights'
+import { summariseEmissions } from '@/lib/calculations/emissionsModel'
+import { PRODUCT_NAME, TAGLINE } from '@/lib/brand'
+
+const AREAS: Array<{ icon: ReactNode; tone: string; title: string; question: string; href: string }> = [
+  { icon: <ShieldCheck className="w-5 h-5" />, tone: 'bg-success-50 text-success-600', title: 'Compliance', question: 'Which regulations apply to our assets, and how compliant are we?', href: '/compliance' },
+  { icon: <HeartPulse className="w-5 h-5" />, tone: 'bg-warning-50 text-warning-600', title: 'Employee health', question: 'Who works with worn-out equipment?', href: '/assets?status=poor' },
+  { icon: <Leaf className="w-5 h-5" />, tone: 'bg-primary-50 text-primary-600', title: 'Sustainability', question: 'What do over-used assets emit, and what would replacing them save?', href: '/sustainability' },
+  { icon: <BatteryCharging className="w-5 h-5" />, tone: 'bg-sky-50 text-sky-600', title: 'Lithium recovery', question: 'How much lithium can retiring devices return?', href: '/dle' },
+]
+
+const ROLES: Array<{ role: string; start: Array<{ label: string; href: string }> }> = [
+  { role: 'Operations leader', start: [{ label: 'Dashboard', href: '/dashboard' }, { label: 'Alerts', href: '/alerts' }] },
+  { role: 'Finance', start: [{ label: 'Reports', href: '/reports' }, { label: 'Score Library', href: '/score-library' }] },
+  { role: 'Sustainability / ESG', start: [{ label: 'Sustainability', href: '/sustainability' }, { label: 'DLE Analytics', href: '/dle' }] },
+  { role: 'Risk & compliance', start: [{ label: 'Compliance', href: '/compliance' }, { label: 'Risk Justification', href: '/risk-justification' }] },
+  { role: 'Asset / facilities manager', start: [{ label: 'Assets', href: '/assets' }, { label: 'Alerts', href: '/alerts' }] },
+  { role: 'Sustainability analyst', start: [{ label: 'Sustainability', href: '/sustainability' }, { label: 'Logic Library', href: '/logic-library' }] },
+]
 
 export default function WelcomePage() {
+  const { importedAssets } = useDashboard()
+  const { user } = useAuth()
+  const hasData = importedAssets.length > 0
+  const ins = useMemo(() => (hasData ? computeInsights(importedAssets, ALL) : null), [hasData, importedAssets])
+  const em = useMemo(() => (hasData ? summariseEmissions(importedAssets) : null), [hasData, importedAssets])
+  const name = user?.email?.split('@')[0]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <BarChart3 className="w-12 h-12 text-primary-600" />
-            <h1 className="text-5xl font-bold text-neutral-900">AssetPulse</h1>
+    <div className="min-h-screen bg-neutral-50">
+      <section className="bg-gradient-to-b from-primary-50 to-neutral-50 border-b border-neutral-200">
+        <div className="page-header max-w-6xl mx-auto px-6 py-10">
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-xl bg-primary-600 flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </span>
+            <div>
+              <p className="text-2xl font-bold text-neutral-900">{PRODUCT_NAME}</p>
+              <p className="text-sm font-medium text-primary-700">{TAGLINE}</p>
+            </div>
           </div>
-          <p className="text-xl text-neutral-600">
-            Professional monitoring for your organization's asset portfolio
+          <h1 className="text-3xl font-bold text-neutral-900 mt-8">{name ? `Welcome, ${name}` : 'Welcome'}</h1>
+          <p className="text-neutral-600 mt-2 max-w-2xl">
+            {hasData
+              ? `Your register of ${formatNumber(importedAssets.length)} assets is loaded. Here's where things stand, and where to go next.`
+              : 'Upload your asset register and AssetPulse shows your compliance position, the people and emissions affected by ageing assets, and what replacing them would change.'}
           </p>
         </div>
+      </section>
 
-        {/* Benefits Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <Card className="text-center">
-            <CardBody>
-              <Package className="w-12 h-12 text-primary-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Complete Visibility</h3>
-              <p className="text-neutral-600 text-sm">
-                Track all your assets including furniture, hardware, software, and real estate in one place
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card className="text-center">
-            <CardBody>
-              <AlertTriangle className="w-12 h-12 text-warning-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Proactive Alerts</h3>
-              <p className="text-neutral-600 text-sm">
-                Get notified before assets fail, reach end-of-life, or violate compliance requirements
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card className="text-center">
-            <CardBody>
-              <TrendingUp className="w-12 h-12 text-success-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Smart Planning</h3>
-              <p className="text-neutral-600 text-sm">
-                Data-driven insights for replacement planning and budget forecasting
-              </p>
-            </CardBody>
-          </Card>
-        </div>
-
-        {/* Features Section */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-center mb-8 text-neutral-900">Key Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardBody>
-                <div className="flex gap-4">
-                  <BarChart3 className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-1">Real-time Dashboard</h4>
-                    <p className="text-sm text-neutral-600">
-                      Executive-level overview with KPI cards and interactive visualizations
-                    </p>
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-10">
+        {hasData && ins && em ? (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-neutral-900">Your portfolio at a glance</h2>
+              <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline">
+                Open dashboard <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: 'Compliance rate', value: `${ins.compliance.complianceRate}%`, sub: `${formatMoney(ins.compliance.fineExposure)} potential fines`, href: '/compliance' },
+                { label: 'Employees exposed', value: formatNumber(ins.health.employees.total), sub: `${ins.health.poorConditionCount} assets in poor condition`, href: '/assets?status=poor' },
+                {
+                  label: 'Emissions after replacement',
+                  value: em.replaceableNow.total > 0 ? `${Math.round(((em.replaceableAfter.total - em.replaceableNow.total) / em.replaceableNow.total) * 100)}%` : '—',
+                  sub: `for ${em.replaceable.length} over-used assets`,
+                  href: '/sustainability',
+                },
+                { label: 'Lithium recoverable', value: `${ins.lithium.lithiumKg.toFixed(2)} kg`, sub: `from ${ins.lithium.lithiumAssets} retiring devices`, href: '/dle' },
+              ].map(k => (
+                <Link key={k.label} href={k.href} className="rounded-xl bg-white border border-neutral-200 p-4 shadow-sm hover:shadow-md hover:border-neutral-300 transition">
+                  <p className="text-sm text-neutral-600">{k.label}</p>
+                  <p className="text-2xl font-bold text-neutral-900 mt-1">{k.value}</p>
+                  <p className="text-xs text-neutral-500 mt-1">{k.sub}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : (
+          <section>
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Get started in three steps</h2>
+            <ol className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                {
+                  icon: <FileSpreadsheet className="w-5 h-5" />,
+                  title: 'Download the template',
+                  text: 'The Extended template adds employee, cost, power and emissions columns for richer results.',
+                  action: <a href="/Asset_Template_Extended.csv" download className="text-sm font-medium text-primary-600 hover:underline">Download Extended template</a>,
+                },
+                {
+                  icon: <Upload className="w-5 h-5" />,
+                  title: 'Upload your register',
+                  text: 'Fill in what you know. Required columns cover asset type, location, support dates and compliance score.',
+                  action: <Link href="/dashboard" className="text-sm font-medium text-primary-600 hover:underline">Upload on the Dashboard</Link>,
+                },
+                {
+                  icon: <LayoutDashboard className="w-5 h-5" />,
+                  title: 'Explore the four areas',
+                  text: 'Compliance, employee health, sustainability and lithium recovery, filtered by region, regulation and team.',
+                  action: <Link href="/dashboard" className="text-sm font-medium text-primary-600 hover:underline">Open Dashboard</Link>,
+                },
+              ].map((s, i) => (
+                <li key={s.title} className="rounded-xl bg-white border border-neutral-200 p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="w-9 h-9 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center">{s.icon}</span>
+                    <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wide">Step {i + 1}</span>
                   </div>
-                </div>
-              </CardBody>
-            </Card>
+                  <h3 className="font-semibold text-neutral-900 mt-3">{s.title}</h3>
+                  <p className="text-sm text-neutral-600 mt-1">{s.text}</p>
+                  <div className="mt-3">{s.action}</div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
-            <Card>
-              <CardBody>
-                <div className="flex gap-4">
-                  <AlertTriangle className="w-6 h-6 text-warning-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-1">Alert System</h4>
-                    <p className="text-sm text-neutral-600">
-                      Automated alerts with multiple severity levels and filtering options
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <div className="flex gap-4">
-                  <Shield className="w-6 h-6 text-success-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-1">Compliance Tracking</h4>
-                    <p className="text-sm text-neutral-600">
-                      Monitor health compliance and ergonomic standards across all assets
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <div className="flex gap-4">
-                  <CheckCircle className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-1">Multi-Category Support</h4>
-                    <p className="text-sm text-neutral-600">
-                      Track assets, hardware, software, real estate, vehicles, and more
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </div>
-        </div>
-
-        {/* AI Intelligence Section - The USP */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-center mb-2 text-neutral-900">🧠 AI-Powered Intelligence</h2>
-          <p className="text-center text-neutral-600 mb-8 text-lg">Where AI Senses What Human Intelligence Alone Cannot</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-2 border-primary-200 bg-primary-50">
-              <CardBody>
-                <div className="flex gap-4">
-                  <Brain className="w-8 h-8 text-primary-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-2">Pattern Recognition Beyond Observation</h4>
-                    <p className="text-sm text-neutral-700">
-                      Our AI continuously analyzes thousands of data points across your entire asset universe, detecting complex patterns and correlations that would be impossible for human analysts to identify manually. Spot hidden trends before they become critical issues.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="border-2 border-primary-200 bg-primary-50">
-              <CardBody>
-                <div className="flex gap-4">
-                  <Zap className="w-8 h-8 text-primary-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-2">Predictive Intelligence</h4>
-                    <p className="text-sm text-neutral-700">
-                      Move beyond reactive problem-solving. Our algorithms predict equipment failures, compliance violations, and business continuity risks days or weeks in advance. Transform your operations from reactive to truly proactive.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="border-2 border-primary-200 bg-primary-50">
-              <CardBody>
-                <div className="flex gap-4">
-                  <Target className="w-8 h-8 text-primary-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-2">Autonomous Risk Sensing</h4>
-                    <p className="text-sm text-neutral-700">
-                      The system automatically senses and classifies risk across multiple dimensions—health, compliance, continuity—without manual thresholds. Dynamic algorithms adapt to your data universe, improving accuracy as more intelligence flows in.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <Card className="border-2 border-primary-200 bg-primary-50">
-              <CardBody>
-                <div className="flex gap-4">
-                  <Lightbulb className="w-8 h-8 text-primary-600 flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-semibold text-neutral-900 mb-2">Objective Definition from Data</h4>
-                    <p className="text-sm text-neutral-700">
-                      Instead of guessing priorities, our AI analyzes your complete asset ecosystem and automatically recommends actions, ranked by impact. What matters most emerges from the data itself, not assumptions.
-                    </p>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-          </div>
-
-          <div className="mt-8 p-6 bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg border border-primary-200">
-            <p className="text-center text-neutral-900 font-semibold mb-2">The AI Advantage</p>
-            <p className="text-center text-neutral-700 text-sm">
-              While traditional asset management relies on manual observation and static rules, our AI-driven system continuously "listens" to your data universe in real-time. It senses patterns, predicts outcomes, and defines priorities that emerge from complex interdependencies humans would take months to discover.
-            </p>
-          </div>
-        </div>
-
-        {/* Asset Types Section */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-center mb-8 text-neutral-900">What You Can Track</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            {[
-              { icon: '📦', name: 'Assets' },
-              { icon: '💻', name: 'Hardware' },
-              { icon: '📱', name: 'Software' },
-              { icon: '🏢', name: 'Real Estate' },
-              { icon: '🚗', name: 'Vehicles' },
-              { icon: '⚙️', name: 'Infrastructure' },
-              { icon: '📊', name: 'Inventory' },
-              { icon: '✨', name: 'Custom Assets' },
-            ].map((item) => (
-              <Card key={item.name}>
-                <CardBody>
-                  <div className="text-3xl mb-2">{item.icon}</div>
-                  <p className="text-sm font-medium text-neutral-900">{item.name}</p>
-                </CardBody>
-              </Card>
+        <section>
+          <h2 className="text-lg font-semibold text-neutral-900 mb-4">What {PRODUCT_NAME} answers</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {AREAS.map(a => (
+              <Link key={a.title} href={a.href} className="group flex items-start gap-4 rounded-xl bg-white border border-neutral-200 p-5 shadow-sm hover:shadow-md hover:border-neutral-300 transition">
+                <span className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${a.tone}`}>{a.icon}</span>
+                <span className="flex-1">
+                  <span className="block font-semibold text-neutral-900">{a.title}</span>
+                  <span className="block text-sm text-neutral-600 mt-1">{a.question}</span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-neutral-400 group-hover:text-primary-600 mt-1" />
+              </Link>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* CTA Section */}
-        <div className="text-center bg-white rounded-lg shadow-lg p-12">
-          <h2 className="text-3xl font-bold mb-4 text-neutral-900">Ready to Get Started?</h2>
-          <p className="text-lg text-neutral-600 mb-8">
-            Begin monitoring your asset health and make data-driven decisions today
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Link href="/dashboard">
-              <Button variant="primary" size="lg">
-                Go to Dashboard
-              </Button>
-            </Link>
-            <Link href="/assets">
-              <Button variant="secondary" size="lg">
-                View Assets
-              </Button>
-            </Link>
-            <Link href="/reports">
-              <Button variant="secondary" size="lg">
-                See Analytics
-              </Button>
-            </Link>
+        <section>
+          <h2 className="text-lg font-semibold text-neutral-900 mb-1">Start here for your role</h2>
+          <p className="text-sm text-neutral-600 mb-4">The two pages most useful to each team. Everything else is one click away in the menu.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {ROLES.map(r => (
+              <div key={r.role} className="rounded-xl bg-white border border-neutral-200 p-4 shadow-sm">
+                <p className="font-medium text-neutral-900">{r.role}</p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {r.start.map(s => (
+                    <Link key={s.href} href={s.href} className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-700 hover:border-primary-500 hover:text-primary-700">
+                      {s.label} <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* Footer */}
-        <div className="text-center mt-12 text-neutral-600 text-sm">
-          <p>
-            AssetPulse v1.0.0 • Professional Asset Monitoring & Alert Management
-          </p>
-        </div>
+        <section className="rounded-xl border border-neutral-200 bg-white p-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+          <div className="flex items-start gap-3">
+            <BookOpen className="w-5 h-5 text-primary-600 mt-0.5" />
+            <p className="text-sm text-neutral-700">
+              <strong>Every number is traceable.</strong> Each figure is labelled as coming from your file, reference data or a fixed rule, and every formula is in the Logic Library.
+            </p>
+          </div>
+          <Link href="/logic-library" className="text-sm font-medium text-primary-600 hover:underline whitespace-nowrap">
+            Open Logic Library →
+          </Link>
+        </section>
       </div>
     </div>
   )

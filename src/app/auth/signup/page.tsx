@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { PRODUCT_NAME, TAGLINE } from '@/lib/brand'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/authContext'
 import { Button } from '@/components/common/Button'
@@ -56,12 +57,13 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center justify-center gap-2 mb-1">
             <BarChart3 className="w-10 h-10 text-primary-600" />
-            <span className="text-2xl font-bold text-neutral-900">AssetPulse</span>
+            <span className="text-2xl font-bold text-neutral-900">{PRODUCT_NAME}</span>
           </div>
+          <p className="text-sm text-primary-700 font-medium mb-6">{TAGLINE}</p>
           <h1 className="text-3xl font-bold text-neutral-900 mb-2">Create Account</h1>
-          <p className="text-neutral-600">Join to manage your assets</p>
+          <p className="text-neutral-600">Turn your asset register into decisions</p>
         </div>
 
         {/* Sign Up Card */}
