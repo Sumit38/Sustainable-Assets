@@ -1,407 +1,349 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { ReactNode, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts'
+import { ArrowRight, Leaf } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
-import { Card, CardBody, CardHeader } from '@/components/common/Card'
-import { Badge } from '@/components/common/Badge'
-import { Button } from '@/components/common/Button'
+import { InfoTip } from '@/components/common/InfoTip'
+import { FilterBar } from '@/components/dashboard/FilterBar'
+import { AssetDrawer } from '@/components/assets/AssetDrawer'
+import { EmissionsMap } from '@/components/sustainability/EmissionsMap'
+import { HEALTH_LABEL, NoData, Pagination, Panel, Pill, Empty } from '@/components/common/ui'
 import { useDashboard } from '@/lib/context/dashboardContext'
-import { SustainabilityMetrics } from '@/components/dashboard/SustainabilityMetrics'
-import { MethaneEmissions } from '@/components/dashboard/MethaneEmissions'
-import { AlertTriangle, CheckCircle, TrendingDown, Zap, Flame, AlertCircle } from 'lucide-react'
+import { ImportedAsset } from '@/lib/calculations/metricCalculator'
+import { methaneAtEndOfLife, summariseEmissions } from '@/lib/calculations/emissionsModel'
+import {
+  DashboardFilters,
+  EMPTY_FILTERS,
+  computeInsights,
+  filterAssets,
+  filterOptions,
+  filtersFromQuery,
+  isPastEndOfLife,
+} from '@/lib/calculations/dashboardInsights'
 
-// Mock data - will be replaced with real data from Supabase
-const MOCK_SUSTAINABILITY_DATA = {
-  pollutionIndex: 0.72,
-  healthScore: 65.5,
-  co2eEmissions: 2840,
-  eolAssets: 45,
-  healthRiskAssets: 78,
-  employeesAtRisk: 156,
-  recyclingRate: 68,
-  avoidedEmissions: 1250,
-  alerts: [
-    {
-      id: '1',
-      type: 'POLLUTION_INDEX_CRITICAL',
-      severity: 'critical',
-      message: '72% of Scope 3 emissions from asset recycling exceed baseline',
-      assetCount: 45,
-      recommendation: 'Accelerate reuse/refurbishment programs',
-    },
-    {
-      id: '2',
-      type: 'ERGONOMIC_RISK_HIGH',
-      severity: 'warning',
-      message: '78 office chairs over 8 years old posing ergonomic health risks',
-      assetCount: 78,
-      recommendation: 'Replace or refurbish aging office furniture',
-    },
-    {
-      id: '3',
-      type: 'HEALTH_INCIDENTS_PREDICTED',
-      severity: 'warning',
-      message: 'Predicted 12 musculoskeletal disorder cases this year',
-      assetCount: 156,
-      recommendation: 'Conduct health risk assessment and ergonomic audit',
-    },
-    {
-      id: '4',
-      type: 'RECYCLING_OPPORTUNITY',
-      severity: 'info',
-      message: '250 assets eligible for reuse - avoid 1,250 kg CO₂e',
-      assetCount: 250,
-      recommendation: 'Implement asset donation program',
-    },
-  ],
-  topRisks: [
-    {
-      assetType: 'Office Chairs',
-      count: 45,
-      co2eImpact: 850,
-      healthRisk: 'Musculoskeletal disorders',
-      recommendation: 'Immediate replacement with ergonomic alternatives',
-    },
-    {
-      assetType: 'Monitors (8+ years)',
-      count: 32,
-      co2eImpact: 420,
-      healthRisk: 'Eye strain, chemical exposure',
-      recommendation: 'Upgrade to modern low-emission monitors',
-    },
-    {
-      assetType: 'Cubicle Systems',
-      count: 28,
-      co2eImpact: 680,
-      healthRisk: 'Air quality degradation',
-      recommendation: 'Refurbish or relocate to newer spaces',
-    },
-  ],
-  departmentMetrics: [
-    {
-      name: 'Engineering',
-      totalAssets: 450,
-      eolAssets: 12,
-      healthRiskScore: 58,
-      employeesAtRisk: 45,
-    },
-    {
-      name: 'Sales & Marketing',
-      totalAssets: 280,
-      eolAssets: 18,
-      healthRiskScore: 72,
-      employeesAtRisk: 56,
-    },
-    {
-      name: 'Operations',
-      totalAssets: 320,
-      eolAssets: 15,
-      healthRiskScore: 65,
-      employeesAtRisk: 55,
-    },
-  ],
-  methaneData: {
-    totalMethaneKg: 45.8,
-    totalCO2eFromMethane: 1282,
-    avoidanceOpportunity: 1282,
-    highMethaneAssets: [
-      {
-        id: '1',
-        asset_type: 'Office Chairs (Foam)',
-        severity: 'critical' as const,
-        escaped_methane_kg: 12.3,
-        co2e_equivalent: 344,
-        recommendation: 'Prioritize recycling over landfill to save 344kg CO₂e',
-      },
-      {
-        id: '2',
-        asset_type: 'Cubicle Padding (Foam)',
-        severity: 'high' as const,
-        escaped_methane_kg: 8.5,
-        co2e_equivalent: 238,
-        recommendation: 'Consider reuse or refurbishment to avoid methane emissions',
-      },
-      {
-        id: '3',
-        asset_type: 'Sofa Units (Fabric)',
-        severity: 'high' as const,
-        escaped_methane_kg: 6.2,
-        co2e_equivalent: 174,
-        recommendation: 'Reuse in office lounges or donate - environmental impact reduced by 95%',
-      },
-    ],
-    materialBreakdown: [
-      {
-        material: 'Foam',
-        methane_kg: 28.5,
-        co2e_equivalent: 798,
-        asset_count: 12,
-      },
-      {
-        material: 'Fabric',
-        methane_kg: 10.2,
-        co2e_equivalent: 286,
-        asset_count: 8,
-      },
-      {
-        material: 'Wood',
-        methane_kg: 4.5,
-        co2e_equivalent: 126,
-        asset_count: 5,
-      },
-      {
-        material: 'Paper',
-        methane_kg: 2.6,
-        co2e_equivalent: 73,
-        asset_count: 3,
-      },
-    ],
-  },
+const PAGE_SIZE = 8
+const TIMELINE_COLORS = ['#dc2626', '#f97316', '#eab308', '#0ea5e9', '#22c55e']
+
+const t = (v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2))
+const mwh = (kWh: number) => t(kWh / 1000)
+const change = (now: number, after: number) => (now > 0 ? Math.round(((after - now) / now) * 100) : 0)
+
+function CompareKpi({ label, unit, nowValue, afterValue, format, info, source }: { label: string; unit: string; nowValue: number; afterValue: number; format: (v: number) => string; info: ReactNode; source: string }) {
+  const n = nowValue
+  const a = afterValue
+  const now = format(n)
+  const after = format(a)
+  const pct = change(n, a)
+  const better = a < n
+  return (
+    <div className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm flex flex-col">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-neutral-700">{label}</p>
+        <InfoTip title={label}>{info}</InfoTip>
+      </div>
+      <div className="mt-2 flex items-end gap-2 flex-wrap">
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-neutral-400">Now</p>
+          <p className="text-2xl font-bold text-neutral-900 leading-tight">{now}</p>
+        </div>
+        <ArrowRight className="w-4 h-4 text-neutral-400 mb-1.5" />
+        <div>
+          <p className="text-[11px] uppercase tracking-wide text-neutral-400">After replacement</p>
+          <p className={`text-2xl font-bold leading-tight ${better ? 'text-success-600' : a > n ? 'text-warning-600' : 'text-neutral-900'}`}>{after}</p>
+        </div>
+      </div>
+      <p className="text-xs text-neutral-500 mt-1">{unit}</p>
+      <div className="mt-auto pt-3 flex items-center justify-between gap-2 text-xs">
+        <span className={`font-semibold ${better ? 'text-success-600' : a > n ? 'text-warning-600' : 'text-neutral-500'}`}>
+          {now === after ? 'No change' : `${pct > 0 ? '+' : ''}${pct}%`}
+        </span>
+        <span className="text-neutral-400 truncate">{source}</span>
+      </div>
+    </div>
+  )
 }
 
 export default function SustainabilityPage() {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'details' | 'methane'>('overview')
-  const { importedAssets, calculatedMetrics } = useDashboard()
+  const { importedAssets } = useDashboard()
+  const [filters, setFilters] = useState<DashboardFilters>(EMPTY_FILTERS)
+  const [page, setPage] = useState(0)
+  const [selected, setSelected] = useState<ImportedAsset | null>(null)
+  useEffect(() => setFilters(filtersFromQuery(window.location.search)), [])
+  useEffect(() => setPage(0), [filters])
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return 'danger'
-      case 'warning':
-        return 'warning'
-      default:
-        return 'neutral'
-    }
+  const options = useMemo(() => filterOptions(importedAssets), [importedAssets])
+  const assets = useMemo(() => filterAssets(importedAssets, filters), [importedAssets, filters])
+  const em = useMemo(() => summariseEmissions(assets), [assets])
+  const methane = useMemo(() => methaneAtEndOfLife(assets), [assets])
+  const timeline = useMemo(() => computeInsights(assets, filters.standard).charts.timeline, [assets, filters.standard])
+
+  if (importedAssets.length === 0) {
+    return (
+      <div className="w-full">
+        <PageHeader title="Sustainability" description="Emissions from over-used assets, and what replacing them would save" homeHref="/welcome" />
+        <div className="p-6">
+          <NoData what="sustainability figures" />
+        </div>
+      </div>
+    )
   }
 
-  const getSeverityIcon = (severity: string) => {
-    if (severity === 'critical' || severity === 'warning') {
-      return <AlertTriangle className="w-5 h-5" />
-    }
-    return <CheckCircle className="w-5 h-5" />
-  }
+  const { replaceableNow: now, replaceableAfter: after, coverage } = em
+  const srcLabel = (fromFile: number) =>
+    fromFile === 0 ? 'Calculated' : fromFile === coverage.total ? 'From your file' : `${fromFile} from file, rest calculated`
+
+  const scopeChart = [
+    { name: 'Scope 1', Now: +now.scope1.toFixed(3), 'After replacement': +after.scope1.toFixed(3) },
+    { name: 'Scope 2', Now: +now.scope2.toFixed(3), 'After replacement': +after.scope2.toFixed(3) },
+    { name: 'Scope 3', Now: +now.scope3.toFixed(3), 'After replacement': +after.scope3.toFixed(3) },
+  ]
+
+  const suggestions = [...em.replaceable].sort((a, b) => b.now.total - b.after!.total - (a.now.total - a.after!.total))
 
   return (
     <div className="w-full">
-      <PageHeader
-        title="Sustainability & Health Impact"
-        description="Environmental emissions and organizational health risk dashboard"
-        alerts={MOCK_SUSTAINABILITY_DATA.alerts.filter((a) => a.severity !== 'info').length}
-        homeHref="/welcome"
-      />
+      <PageHeader title="Sustainability" description="Emissions from over-used assets, and what replacing them would save" homeHref="/welcome" />
 
-      {importedAssets.length === 0 && (
-        <div className="p-6">
-          <Card>
-            <CardBody className="flex flex-col items-center justify-center py-12">
-              <AlertCircle className="w-12 h-12 text-neutral-300 mb-4" />
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">No Sustainability Data</h3>
-              <p className="text-sm text-neutral-600 mb-6">
-                Import asset data from the Dashboard to view sustainability and health impact metrics
-              </p>
-              <Button variant="primary" onClick={() => window.location.href = '/'}>
-                Go to Dashboard
-              </Button>
-            </CardBody>
-          </Card>
-        </div>
-      )}
-
-      {importedAssets.length > 0 && (
       <div className="p-6 space-y-6">
-        {/* Tab Navigation */}
-        <div className="flex gap-2 border-b border-neutral-200 overflow-x-auto">
-          {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'alerts', label: `Alerts (${MOCK_SUSTAINABILITY_DATA.alerts.length})` },
-            { id: 'methane', label: 'Methane (CH₄)' },
-            { id: 'details', label: 'Department Details' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSelectedTab(tab.id as any)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                selectedTab === tab.id
-                  ? 'border-primary-600 text-primary-600'
-                  : 'border-transparent text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <FilterBar filters={filters} onChange={setFilters} options={options} shown={assets.length} total={importedAssets.length} />
+
+        <div className="flex gap-3 bg-success-50 border border-success-500/20 rounded-xl p-4 text-sm text-success-700">
+          <Leaf className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <p>
+            <strong>{em.overUsed.length}</strong> of {assets.length} assets are <strong>over-used</strong> (critical or past end of life).
+            The figures below compare their yearly emissions and electricity today with replacing them by current-generation models.
+            {em.overUsed.length !== em.replaceable.length && (
+              <> {em.overUsed.length - em.replaceable.length} over-used assets have no reference model ({coverage.unmodelledTypes.join(', ')}) and are left out of the comparison.</>
+            )}
+          </p>
         </div>
 
-        {/* Overview Tab */}
-        {selectedTab === 'overview' && (
-          <div className="space-y-6">
-            <SustainabilityMetrics
-              pollutionIndex={MOCK_SUSTAINABILITY_DATA.pollutionIndex}
-              healthScore={MOCK_SUSTAINABILITY_DATA.healthScore}
-              co2eEmissions={MOCK_SUSTAINABILITY_DATA.co2eEmissions}
-              eolAssets={MOCK_SUSTAINABILITY_DATA.eolAssets}
-              healthRiskAssets={MOCK_SUSTAINABILITY_DATA.healthRiskAssets}
-              employeesAtRisk={MOCK_SUSTAINABILITY_DATA.employeesAtRisk}
-              recyclingRate={MOCK_SUSTAINABILITY_DATA.recyclingRate}
-              avoidedEmissions={MOCK_SUSTAINABILITY_DATA.avoidedEmissions}
-            />
-
-            {/* Top Risks */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <TrendingDown className="w-5 h-5 text-danger-600" />
-                  Top Asset Risks
-                </h3>
-              </CardHeader>
-              <CardBody>
-                <div className="space-y-4">
-                  {MOCK_SUSTAINABILITY_DATA.topRisks.map((risk, index) => (
-                    <div key={index} className="border border-neutral-200 rounded-lg p-4">
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-neutral-900">{risk.assetType}</p>
-                          <p className="text-2xl font-bold text-danger-600 mt-1">{risk.count}</p>
-                          <p className="text-xs text-neutral-500">Assets</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-neutral-900">CO₂e Impact</p>
-                          <p className="text-2xl font-bold text-warning-600 mt-1">{risk.co2eImpact}</p>
-                          <p className="text-xs text-neutral-500">kg CO₂e</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-neutral-900">Health Risk</p>
-                          <p className="text-sm text-neutral-700 mt-2">{risk.healthRisk}</p>
-                        </div>
-                        <div className="md:col-span-2">
-                          <p className="text-sm font-semibold text-neutral-900 mb-2">Recommendation</p>
-                          <p className="text-sm text-neutral-700 bg-primary-50 p-2 rounded">
-                            {risk.recommendation}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardBody>
-            </Card>
+        {em.replaceable.length === 0 ? (
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm">
+            <Empty>No over-used assets in this selection, so there is nothing to replace yet.</Empty>
           </div>
-        )}
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+              <CompareKpi
+                label="Scope 1 emissions"
+                unit="t CO₂e per year"
+                nowValue={now.scope1}
+                afterValue={after.scope1}
+                format={t}
+                source={srcLabel(coverage.scope1FromFile)}
+                info="Direct emissions from fuel the asset burns itself, e.g. petrol vehicles. Office electronics and furniture have none. Uses your Scope 1 tCO2e column where provided."
+              />
+              <CompareKpi
+                label="Scope 2 emissions"
+                unit="t CO₂e per year"
+                nowValue={now.scope2}
+                afterValue={after.scope2}
+                format={t}
+                source={srcLabel(coverage.scope2FromFile)}
+                info="Emissions from the electricity the asset uses: electricity (kWh) × the country's grid emission factor. Uses your Scope 2 tCO2e column where provided."
+              />
+              <CompareKpi
+                label="Scope 3 emissions"
+                unit="t CO₂e per year"
+                nowValue={now.scope3}
+                afterValue={after.scope3}
+                format={t}
+                source={srcLabel(coverage.scope3FromFile)}
+                info="Manufacturing (embodied) emissions spread over the asset's typical lifetime, so a new asset's footprint counts too. Uses your Scope 3 tCO2e column where provided."
+              />
+              <CompareKpi
+                label="Total carbon emissions"
+                unit="t CO₂e per year (Scope 1 + 2 + 3)"
+                nowValue={now.total}
+                afterValue={after.total}
+                format={t}
+                source="Sum of the three scopes"
+                info="Scope 1 + Scope 2 + Scope 3 for the over-used assets, today and after replacement."
+              />
+              <CompareKpi
+                label="Electricity consumption"
+                unit="MWh per year, during usage"
+                nowValue={now.kWh}
+                afterValue={after.kWh}
+                format={mwh}
+                source={srcLabel(coverage.energyFromFile)}
+                info="Power (W) × usage hours per year. Uses your Power Watts and Usage Hours Per Year columns where provided; otherwise a typical rating for the asset type and its age (4+ years = older model), at 2,000 office hours a year."
+              />
+            </div>
 
-        {/* Alerts Tab */}
-        {selectedTab === 'alerts' && (
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold">Active Alerts & Recommendations</h3>
-            </CardHeader>
-            <CardBody>
-              <div className="space-y-3">
-                {MOCK_SUSTAINABILITY_DATA.alerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className={`p-4 rounded-lg border-l-4 ${
-                      alert.severity === 'critical'
-                        ? 'border-l-danger-600 bg-danger-50'
-                        : alert.severity === 'warning'
-                          ? 'border-l-warning-600 bg-warning-50'
-                          : 'border-l-success-600 bg-success-50'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
-                        {getSeverityIcon(alert.severity)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-semibold text-neutral-900">{alert.message}</p>
-                            <p className="text-sm text-neutral-600 mt-1">
-                              Affects {alert.assetCount} assets
-                            </p>
-                          </div>
-                          <Badge variant={getSeverityColor(alert.severity) as any}>
-                            {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
-                          </Badge>
-                        </div>
-                        <div className="mt-3 p-3 bg-white bg-opacity-60 rounded">
-                          <p className="text-sm font-medium text-neutral-700">Action:</p>
-                          <p className="text-sm text-neutral-600 mt-1">{alert.recommendation}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
-        )}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+              <Panel className="lg:col-span-2" title="Emissions by scope" info="Yearly emissions of the over-used assets by scope, today versus after replacement.">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={scopeChart} margin={{ left: -8, right: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number) => `${t(v)} t CO₂e / yr`} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Bar dataKey="Now" fill="#94a3b8" maxBarSize={40} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="After replacement" fill="#16a34a" maxBarSize={40} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Panel>
 
-        {/* Methane Emissions Tab */}
-        {selectedTab === 'methane' && (
-          <MethaneEmissions
-            methaneByMaterial={MOCK_SUSTAINABILITY_DATA.methaneData.materialBreakdown}
-            highMethaneAssets={MOCK_SUSTAINABILITY_DATA.methaneData.highMethaneAssets}
-            totalMethaneKg={MOCK_SUSTAINABILITY_DATA.methaneData.totalMethaneKg}
-            totalCO2eFromMethane={MOCK_SUSTAINABILITY_DATA.methaneData.totalCO2eFromMethane}
-            avoidanceOpportunity={MOCK_SUSTAINABILITY_DATA.methaneData.avoidanceOpportunity}
-          />
-        )}
-
-        {/* Department Details Tab */}
-        {selectedTab === 'details' && (
-          <Card>
-            <CardHeader>
-              <h3 className="text-lg font-semibold">Department Sustainability Metrics</h3>
-            </CardHeader>
-            <CardBody>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="border-b border-neutral-200">
-                    <tr>
-                      <th className="text-left py-3 px-4 font-semibold text-neutral-900">Department</th>
-                      <th className="text-left py-3 px-4 font-semibold text-neutral-900">Total Assets</th>
-                      <th className="text-left py-3 px-4 font-semibold text-neutral-900">EOL Assets</th>
-                      <th className="text-left py-3 px-4 font-semibold text-neutral-900">Health Risk</th>
-                      <th className="text-left py-3 px-4 font-semibold text-neutral-900">At Risk</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MOCK_SUSTAINABILITY_DATA.departmentMetrics.map((dept, index) => (
-                      <tr key={index} className="border-b border-neutral-100 hover:bg-neutral-50">
-                        <td className="py-3 px-4 font-medium text-neutral-900">{dept.name}</td>
-                        <td className="py-3 px-4 text-neutral-700">{dept.totalAssets}</td>
-                        <td className="py-3 px-4">
-                          <Badge variant="danger">{dept.eolAssets}</Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-20 h-2 bg-neutral-200 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${
-                                  dept.healthRiskScore > 70
-                                    ? 'bg-danger-600'
-                                    : dept.healthRiskScore > 50
-                                      ? 'bg-warning-600'
-                                      : 'bg-success-600'
-                                }`}
-                                style={{ width: `${dept.healthRiskScore}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-semibold">{dept.healthRiskScore}%</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-neutral-900">
-                          {dept.employeesAtRisk}
-                        </td>
+              <Panel
+                className="lg:col-span-3"
+                title={`Replacement suggestions (${suggestions.length})`}
+                info="For each over-used asset: the replacement named in your file (if any) and the current-generation model class used for the prediction, with yearly emissions before and after. Sorted by biggest saving."
+              >
+                <div className="overflow-x-auto -mx-5">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase tracking-wide text-neutral-500 border-b border-neutral-200">
+                        <th className="px-5 py-2 font-medium">Asset</th>
+                        <th className="px-3 py-2 font-medium">Suggested replacement</th>
+                        <th className="px-3 py-2 font-medium text-right">Now</th>
+                        <th className="px-3 py-2 font-medium text-right">After</th>
+                        <th className="px-5 py-2 font-medium text-right">Saving</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardBody>
-          </Card>
+                    </thead>
+                    <tbody>
+                      {suggestions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map(r => {
+                        const a = r.asset
+                        const h = HEALTH_LABEL[isPastEndOfLife(a) ? 'end-of-life' : a.healthStatus]
+                        const saving = r.now.total - r.after!.total
+                        return (
+                          <tr key={a.assetId} className="border-b border-neutral-100 hover:bg-neutral-50 align-top">
+                            <td className="px-5 py-2">
+                              <button type="button" onClick={() => setSelected(a)} className="text-left">
+                                <span className="block font-medium text-primary-700 hover:underline">{a.assetId}</span>
+                                <span className="block text-xs text-neutral-500 truncate max-w-[180px]">{a.productName}</span>
+                              </button>
+                              <div className="mt-1 flex gap-1">
+                                <Pill tone={h.tone}>{h.label}</Pill>
+                                <Pill>{a.country}</Pill>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2">
+                              {r.after!.suggestedName && <p className="text-neutral-900">{r.after!.suggestedName}</p>}
+                              <p className={r.after!.suggestedName ? 'text-xs text-neutral-500' : 'text-neutral-900'}>
+                                {r.after!.suggestedName ? 'Specs: ' : ''}
+                                {r.after!.replacementClass}
+                              </p>
+                            </td>
+                            <td className="px-3 py-2 text-right text-neutral-700 whitespace-nowrap">{t(r.now.total)} t</td>
+                            <td className="px-3 py-2 text-right text-neutral-700 whitespace-nowrap">{t(r.after!.total)} t</td>
+                            <td className={`px-5 py-2 text-right font-semibold whitespace-nowrap ${saving > 0 ? 'text-success-600' : 'text-warning-600'}`}>
+                              {saving > 0 ? '−' : '+'}
+                              {t(Math.abs(saving))} t
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination page={page} pageSize={PAGE_SIZE} total={suggestions.length} onPage={setPage} />
+              </Panel>
+            </div>
+          </>
         )}
+
+        <Panel
+          title="Emissions vs electricity around the world"
+          info="Yearly figures for all assets in this selection, by the country they are in. Switch between total emissions, electricity used, and emissions per MWh of electricity. Hover a country for all three."
+          actions={
+            <span className="text-xs text-neutral-500 hidden sm:inline">
+              Whole fleet: <strong className="text-neutral-800">{t(em.fleet.total)} t CO₂e</strong> · <strong className="text-neutral-800">{mwh(em.fleet.kWh)} MWh</strong> / yr
+            </span>
+          }
+        >
+          <EmissionsMap data={em.countries} />
+        </Panel>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Panel title="End-of-life timeline" info="How many assets reach their Last Date of Support in each period. Red: already unsupported and over-used.">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={timeline} margin={{ left: -16, right: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => [`${v} assets`, 'Support ends']} />
+                  <Bar dataKey="count" maxBarSize={48} radius={[4, 4, 0, 0]}>
+                    {timeline.map((_, i) => (
+                      <Cell key={i} fill={TIMELINE_COLORS[i]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Panel>
+
+          <Panel
+            title="Methane if over-used assets go to landfill"
+            info="Methane (CH₄) released as materials such as foam, fabric and wood decompose in landfill. Assumes 65% is captured at the landfill and the rest escapes; CH₄ is counted at 28× CO₂ (100-year warming potential). Recycling or refurbishing avoids all of it."
+          >
+            {methane.assets === 0 ? (
+              <Empty>
+                No over-used assets with a methane factor in this selection
+                {methane.noFactorTypes.length > 0 && <> ({methane.noFactorTypes.join(', ')} have no methane reference)</>}.
+              </Empty>
+            ) : (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-lg bg-neutral-50 p-3">
+                    <p className="text-xs text-neutral-500">Methane released</p>
+                    <p className="text-xl font-bold text-neutral-900">{methane.ch4Kg.toFixed(2)} kg CH₄</p>
+                  </div>
+                  <div className="rounded-lg bg-neutral-50 p-3">
+                    <p className="text-xs text-neutral-500">Warming impact</p>
+                    <p className="text-xl font-bold text-danger-600">{t(methane.co2eKg)} kg CO₂e</p>
+                  </div>
+                  <div className="rounded-lg bg-success-50 p-3">
+                    <p className="text-xs text-success-700">Avoidable by recycling</p>
+                    <p className="text-xl font-bold text-success-700">100%</p>
+                  </div>
+                </div>
+                <div className="h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={methane.byType} layout="vertical" margin={{ left: 8, right: 16 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 11 }} unit=" kg" />
+                      <YAxis type="category" dataKey="type" width={80} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number, _n, p: any) => [`${t(v)} kg CO₂e (${p.payload.assets} assets)`, 'Methane impact']} />
+                      <Bar dataKey="co2eKg" fill="#ea580c" maxBarSize={22} radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {methane.noFactorTypes.length > 0 && (
+                  <p className="text-xs text-neutral-500 mt-2">No methane reference for: {methane.noFactorTypes.join(', ')}.</p>
+                )}
+              </>
+            )}
+          </Panel>
+        </div>
+
+        <section className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm text-sm text-neutral-600 space-y-2">
+          <h2 className="font-semibold text-neutral-900">Where these numbers come from</h2>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              Your own <em>Scope 1/2/3 tCO2e</em>, <em>Power Watts</em> and <em>Usage Hours Per Year</em> columns are used wherever filled in
+              ({coverage.scope2FromFile} of {coverage.total} assets have Scope 2, {coverage.energyFromFile} have power or hours).
+            </li>
+            <li>Otherwise AssetPulse calculates them from typical power ratings, manufacturing footprints and lifetimes per asset type, and approximate 2023 national grid factors.</li>
+            {coverage.worldAverageCountries.length > 0 && (
+              <li>No national grid factor for {coverage.worldAverageCountries.join(', ')}; the world average (0.48 kg CO₂e/kWh) is used.</li>
+            )}
+            {coverage.unmodelledTypes.length > 0 && <li>No reference model for: {coverage.unmodelledTypes.join(', ')}. Add their scope columns to include them.</li>}
+          </ul>
+          <Link href="/logic-library#emissions" className="inline-block text-sm font-medium text-primary-600 hover:underline">
+            See every formula and reference value →
+          </Link>
+        </section>
       </div>
-      )}
+
+      <AssetDrawer asset={selected} onClose={() => setSelected(null)} />
     </div>
   )
 }

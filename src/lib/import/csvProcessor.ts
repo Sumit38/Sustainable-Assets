@@ -80,19 +80,48 @@ const OPTIONAL_FIELDS = [
   'Replacement Cost',
   'Annual CO2e',
   'Power Watts',
+  'Usage Hours Per Year',
+  'Scope 1 tCO2e',
+  'Scope 2 tCO2e',
+  'Scope 3 tCO2e',
   'Notes',
 ]
 
 export function parseCSV(csvContent: string): string[][] {
-  const lines = csvContent.trim().split('\n')
+  const text = csvContent.replace(/^﻿/, '').trim()
   const rows: string[][] = []
+  let row: string[] = []
+  let cell = ''
+  let quoted = false
 
-  for (const line of lines) {
-    // Simple CSV parsing - handles basic comma-separated values
-    // For complex CSV with quotes, use a library
-    const row = line.split(',').map(cell => cell.trim())
-    rows.push(row)
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') {
+        cell += '"'
+        i++
+      } else if (ch === '"') {
+        quoted = false
+      } else {
+        cell += ch
+      }
+    } else if (ch === '"') {
+      quoted = true
+    } else if (ch === ',') {
+      row.push(cell.trim())
+      cell = ''
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++
+      row.push(cell.trim())
+      rows.push(row)
+      row = []
+      cell = ''
+    } else {
+      cell += ch
+    }
   }
+  row.push(cell.trim())
+  rows.push(row)
 
   return rows
 }
@@ -189,6 +218,16 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
       const annualCO2eStr = row[headerMap['Annual CO2e']]?.trim()
       const powerWattsStr = row[headerMap['Power Watts']]?.trim()
       const notes = row[headerMap['Notes']]?.trim()
+      const optionalNumber = (header: string) => {
+        const raw = row[headerMap[header]]?.trim()
+        if (!raw) return undefined
+        const n = parseFloat(raw)
+        return isNaN(n) || n < 0 ? undefined : n
+      }
+      const usageHoursPerYear = optionalNumber('Usage Hours Per Year')
+      const scope1Tco2e = optionalNumber('Scope 1 tCO2e')
+      const scope2Tco2e = optionalNumber('Scope 2 tCO2e')
+      const scope3Tco2e = optionalNumber('Scope 3 tCO2e')
 
       // Validate required fields
       if (!assetId) {
@@ -343,6 +382,10 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
         ...(replacementCost && !isNaN(replacementCost) && { replacementCost }),
         ...(annualCO2e && !isNaN(annualCO2e) && { annualCO2e }),
         ...(powerWatts && !isNaN(powerWatts) && { powerWatts }),
+        ...(usageHoursPerYear !== undefined && { usageHoursPerYear }),
+        ...(scope1Tco2e !== undefined && { scope1Tco2e }),
+        ...(scope2Tco2e !== undefined && { scope2Tco2e }),
+        ...(scope3Tco2e !== undefined && { scope3Tco2e }),
         ...(notes && { notes }),
       }
 

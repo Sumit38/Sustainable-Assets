@@ -56,6 +56,11 @@ export async function saveAssetsToDatabase(
           replacement_cost: asset.replacementCost,
           annual_co2e: asset.annualCO2e,
           power_watts: asset.powerWatts,
+          usage_hours_per_year: asset.usageHoursPerYear,
+          replacement_product: asset.replacementProduct,
+          scope1_tco2e: asset.scope1Tco2e,
+          scope2_tco2e: asset.scope2Tco2e,
+          scope3_tco2e: asset.scope3Tco2e,
           created_at: new Date().toISOString(),
         }))
       )
@@ -98,6 +103,7 @@ export async function loadAssetsFromDatabase(
       return []
     }
 
+    const num = (v: unknown) => (v === null || v === undefined || v === '' ? undefined : Number(v))
     // Transform database rows to ImportedAsset type
     return data.map(row => ({
       assetId: row.asset_id,
@@ -115,14 +121,19 @@ export async function loadAssetsFromDatabase(
       location: row.location,
       cost: row.cost,
       purchaseDate: row.purchase_date,
-      employeesAffected: row.employees_affected,
-      healthIssuesPerYear: row.health_issues_per_year,
-      annualMaintenanceCost: row.annual_maintenance_cost,
-      downtimeHoursPerFailure: row.downtime_hours_per_failure,
-      downtimeCostPerHour: row.downtime_cost_per_hour,
-      replacementCost: row.replacement_cost,
-      annualCO2e: row.annual_co2e,
-      powerWatts: row.power_watts,
+      employeesAffected: num(row.employees_affected),
+      healthIssuesPerYear: num(row.health_issues_per_year),
+      annualMaintenanceCost: num(row.annual_maintenance_cost),
+      downtimeHoursPerFailure: num(row.downtime_hours_per_failure),
+      downtimeCostPerHour: num(row.downtime_cost_per_hour),
+      replacementCost: num(row.replacement_cost),
+      annualCO2e: num(row.annual_co2e),
+      powerWatts: num(row.power_watts),
+      usageHoursPerYear: num(row.usage_hours_per_year),
+      replacementProduct: row.replacement_product ?? undefined,
+      scope1Tco2e: num(row.scope1_tco2e),
+      scope2Tco2e: num(row.scope2_tco2e),
+      scope3Tco2e: num(row.scope3_tco2e),
     }))
   } catch (err) {
     console.warn('Failed to load assets from database:', err)

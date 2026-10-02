@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { Pill, PillTone } from '@/components/common/ui'
 import { COMPLIANCE_STANDARDS } from '@/lib/data/complianceMatrix'
 import { ASSET_MATERIAL_DATABASE } from '@/lib/data/assetMaterialDatabase'
+import { EMISSION_PROFILES, GRID_FACTORS, WORLD_AVERAGE_GRID_FACTOR } from '@/lib/data/emissionReference'
 import { COMPLIANCE_THRESHOLD, formatMoney } from '@/lib/calculations/dashboardInsights'
 
 type Source = 'file' | 'reference' | 'rule'
@@ -94,16 +95,44 @@ Average asset health = average points across assets`,
     ],
   },
   {
-    id: 'carbon',
+    id: 'emissions',
     group: 'Sustainability',
-    title: 'Carbon footprint',
-    summary: 'Annual emissions of your assets.',
-    formula: `From assets due for replacement = Σ Annual CO2e, for assets that need action
-Carbon footprint (all)          = Σ Annual CO2e (all assets) + landfill methane for retiring assets
-Methane                         = methane factor of the asset type × global-warming potential`,
+    title: 'Scope 1, 2, 3 emissions & electricity',
+    summary: 'Yearly emissions and electricity per asset, today and after replacement.',
+    formula: `Electricity (kWh/yr) = Power (W) × Usage hours per year ÷ 1000
+   Power: your Power Watts, else the type's typical rating (older model if made 4+ years ago)
+   Hours: your Usage Hours Per Year, else 2,000 office hours (8,760 for always-on equipment)
+Scope 1 (t/yr) = your Scope 1 tCO2e, else direct fuel emissions of the type (petrol vehicle 4.6 t, others 0)
+Scope 2 (t/yr) = your Scope 2 tCO2e, else Electricity × country grid factor ÷ 1000
+Scope 3 (t/yr) = your Scope 3 tCO2e, else manufacturing footprint ÷ typical lifetime
+Total = Scope 1 + Scope 2 + Scope 3
+
+Over-used = critical or past end of life
+After replacement = same formulas using the type's current-generation reference model
+                    (current power rating, its manufacturing footprint and lifetime), same country and hours`,
     inputs: [
-      { name: 'Annual CO2e (tonnes)', source: 'file' },
-      { name: 'Methane factor per asset type', source: 'reference' },
+      { name: 'Scope 1/2/3 tCO2e, Power Watts, Usage Hours Per Year', source: 'file' },
+      { name: 'Asset Type, Country, Date of Manufacture', source: 'file' },
+      { name: 'Power ratings, footprints, lifetimes (table below)', source: 'reference' },
+      { name: 'Grid factor per country (table below)', source: 'reference' },
+    ],
+    notes: [
+      'Your own columns always take priority; each KPI shows whether it came from your file or was calculated.',
+      'Scope 3 includes the new asset\'s manufacturing, so replacing can raise Scope 3 while lowering Scope 2.',
+      'The older Annual CO2e column is still shown on each asset but is not used, because it does not say which scope it covers.',
+    ],
+  },
+  {
+    id: 'methane',
+    group: 'Sustainability',
+    title: 'Methane at end of life',
+    summary: 'Methane released if over-used assets are sent to landfill.',
+    formula: `Methane released (kg CH4) = methane factor of the type × (1 − 65% landfill capture)
+Warming impact (kg CO2e)  = methane released × 28 (100-year global warming potential)`,
+    inputs: [
+      { name: 'Asset Type, Health Status, Last Date of Support', source: 'file' },
+      { name: 'Methane factor per type', source: 'reference' },
+      { name: 'Capture rate 65%, GWP 28', source: 'rule' },
     ],
   },
   {
@@ -279,6 +308,57 @@ export default function LogicLibraryPage() {
         })}
 
         {shown.length === 0 && <p className="text-sm text-neutral-500 text-center py-6">No formulas match “{query}”.</p>}
+
+        <section id="emission-profiles" className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
+          <h2 className="font-semibold text-neutral-900 mb-1">Reference: emissions profile per asset type</h2>
+          <p className="text-sm text-neutral-500 mb-3">
+            Typical values used when your file has no Power Watts or Scope columns. Older model = made 4+ years ago.
+          </p>
+          <div className="overflow-x-auto -mx-5">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-neutral-500 border-b border-neutral-200">
+                  <th className="px-5 py-2 font-medium">Asset type</th>
+                  <th className="px-3 py-2 font-medium text-right">Older model (W)</th>
+                  <th className="px-3 py-2 font-medium text-right">Current model (W)</th>
+                  <th className="px-3 py-2 font-medium text-right">Hours / yr</th>
+                  <th className="px-3 py-2 font-medium text-right">Manufacturing (kg CO₂e)</th>
+                  <th className="px-3 py-2 font-medium text-right">Lifetime (yrs)</th>
+                  <th className="px-5 py-2 font-medium">Replacement model class</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(EMISSION_PROFILES).map(([type, p]) => (
+                  <tr key={type} className="border-b border-neutral-100">
+                    <td className="px-5 py-2 text-neutral-900">{type}</td>
+                    <td className="px-3 py-2 text-right text-neutral-700">{p.legacyPowerW}</td>
+                    <td className="px-3 py-2 text-right text-neutral-700">{p.currentPowerW}</td>
+                    <td className="px-3 py-2 text-right text-neutral-700">{p.hoursPerYear.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-right text-neutral-700">{p.embodiedKg.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-right text-neutral-700">{p.lifetimeYears}</td>
+                    <td className="px-5 py-2 text-neutral-700">{p.replacement.label}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="grid-factors" className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
+          <h2 className="font-semibold text-neutral-900 mb-1">Reference: electricity grid emission factors</h2>
+          <p className="text-sm text-neutral-500 mb-3">
+            Approximate 2023 average carbon intensity of electricity generation (Ember / IEA). Countries not listed use the world
+            average of {WORLD_AVERAGE_GRID_FACTOR} kg CO₂e/kWh.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-1 text-sm">
+            {Object.entries(GRID_FACTORS).map(([country, f]) => (
+              <div key={country} className="flex justify-between border-b border-neutral-100 py-1">
+                <span className="text-neutral-700">{country}</span>
+                <span className="font-medium text-neutral-900">{f.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
         <section id="fine-table" className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold text-neutral-900 mb-1">Reference: fines per regulation</h2>

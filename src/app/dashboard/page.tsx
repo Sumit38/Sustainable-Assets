@@ -11,6 +11,7 @@ import { ShieldAlert, ShieldCheck, HeartPulse, Leaf, BatteryCharging, Upload, Ch
 import { validateAndProcessCSV, ExtendedImportedAsset } from '@/lib/import/csvProcessor'
 import { calculateMetrics } from '@/lib/calculations/metricCalculator'
 import { useDashboard } from '@/lib/context/dashboardContext'
+import { summariseEmissions } from '@/lib/calculations/emissionsModel'
 import {
   ALL,
   COMPLIANCE_THRESHOLD,
@@ -34,6 +35,12 @@ const HEALTH_SLICES = [
 
 const rateTone = (r: number) => (r >= 90 ? 'text-success-600' : r >= 75 ? 'text-warning-600' : 'text-danger-600')
 const rateBar = (r: number) => (r >= 90 ? 'bg-success-500' : r >= 75 ? 'bg-warning-500' : 'bg-danger-500')
+
+const fmtT = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2))
+const pctChange = (now: number, after: number) => {
+  const p = now > 0 ? Math.round(((after - now) / now) * 100) : 0
+  return `${p > 0 ? '+' : ''}${p}%`
+}
 
 const TIMELINE_COLORS = ['#dc2626', '#f97316', '#eab308', '#0ea5e9', '#22c55e']
 
@@ -79,6 +86,7 @@ export default function Dashboard() {
   const options = useMemo(() => filterOptions(importedAssets), [importedAssets])
   const filtered = useMemo(() => filterAssets(importedAssets, filters), [importedAssets, filters])
   const insights = useMemo(() => computeInsights(filtered, filters.standard), [filtered, filters.standard])
+  const emissions = useMemo(() => summariseEmissions(filtered), [filtered])
 
   const setFilter = (key: keyof DashboardFilters, value: string) =>
     setFilters(f => ({ ...f, [key]: f[key] === value ? ALL : value }))
@@ -260,36 +268,32 @@ export default function Dashboard() {
               />
               <StoryCard
                 title="Sustainability"
-                value={sustainability.co2eTonnes.total.toFixed(1)}
+                value={fmtT(emissions.overUsedNow.total)}
                 unit="t CO₂e / yr"
-                caption="emitted by assets due for replacement"
+                caption="emitted by over-used assets (Scope 1 + 2 + 3)"
                 icon={<Leaf className="w-5 h-5" />}
                 tone="success"
                 href={`/sustainability${query}`}
-                missingData={
-                  insights.actionCount > 0 && sustainability.co2eTonnes.withData === 0
-                    ? 'Add the “Annual CO2e” column to your file to see the footprint.'
-                    : undefined
-                }
                 stats={[
                   {
-                    label: 'Whole-fleet footprint',
-                    value: sustainability.fleetCo2eTonnes.withData > 0 ? `${sustainability.fleetCo2eTonnes.total.toFixed(1)} t / yr` : '—',
-                  },
-                  {
-                    label: 'Share from retiring assets',
+                    label: 'After replacement',
                     value:
-                      sustainability.fleetCo2eTonnes.total > 0
-                        ? `${Math.round((sustainability.co2eTonnes.total / sustainability.fleetCo2eTonnes.total) * 100)}%`
+                      emissions.replaceable.length > 0
+                        ? `${fmtT(emissions.replaceableAfter.total)} t (${pctChange(emissions.replaceableNow.total, emissions.replaceableAfter.total)})`
                         : '—',
+                    tone: emissions.replaceableAfter.total < emissions.replaceableNow.total ? 'success' : 'neutral',
                   },
-                  { label: 'Assets with CO₂e data', value: `${sustainability.fleetCo2eTonnes.withData} of ${sustainability.fleetCo2eTonnes.of}` },
+                  { label: 'Electricity, over-used assets', value: `${fmtT(emissions.overUsedNow.kWh / 1000)} MWh / yr` },
+                  { label: 'Whole-fleet emissions', value: `${fmtT(emissions.fleet.total)} t / yr` },
                 ]}
                 info={
                   <>
-                    The total of the <em>Annual CO2e</em> column (tonnes per year) for assets that are critical or past end of
-                    life. Old equipment usually uses more energy than modern replacements, so this is the footprint you could cut
-                    by replacing them.
+                    Yearly Scope 1 + 2 + 3 emissions of assets that are critical or past end of life, and what they would be after
+                    replacing them with current-generation models.
+                    <br />
+                    <br />
+                    Uses your Scope and Power columns where provided; otherwise typical ratings per asset type and national grid
+                    factors. Details on the Sustainability page.
                   </>
                 }
               />

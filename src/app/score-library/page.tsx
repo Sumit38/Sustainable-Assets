@@ -9,6 +9,7 @@ import { FilterBar } from '@/components/dashboard/FilterBar'
 import { NoData } from '@/components/common/ui'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { calculateMetrics } from '@/lib/calculations/metricCalculator'
+import { summariseEmissions } from '@/lib/calculations/emissionsModel'
 import {
   COMPLIANCE_THRESHOLD,
   DashboardFilters,
@@ -46,6 +47,7 @@ interface Group {
   scores: Score[]
 }
 
+const fmtT = (v: number) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2))
 const band = (v: number, warn: number, bad: number): Tone => (v >= bad ? 'bad' : v >= warn ? 'warn' : 'good')
 
 function ScoreTile({ s }: { s: Score }) {
@@ -82,6 +84,7 @@ export default function ScoreLibraryPage() {
   const assets = useMemo(() => filterAssets(importedAssets, filters), [importedAssets, filters])
   const m = useMemo(() => calculateMetrics(assets), [assets])
   const ins = useMemo(() => computeInsights(assets, filters.standard), [assets, filters.standard])
+  const em = useMemo(() => summariseEmissions(assets), [assets])
 
   if (importedAssets.length === 0) {
     return (
@@ -178,20 +181,33 @@ export default function ScoreLibraryPage() {
       accent: 'bg-success-50 text-success-600',
       scores: [
         {
-          name: 'Carbon footprint',
-          value: m.carbonFootprintTonnes.toFixed(1),
+          name: 'Over-used assets: emissions',
+          value: fmtT(em.overUsedNow.total),
           unit: 't CO₂e / yr',
-          info: 'Annual CO2e of all assets with that column, plus estimated landfill methane for retiring assets.',
-          logic: 'carbon',
-          missing: hasCo2 ? undefined : 'Add the “Annual CO2e” column to see this.',
+          info: "Scope 1 + 2 + 3 per year for assets that are critical or past end of life. Same figure as the dashboard's Sustainability card.",
+          logic: 'emissions',
         },
         {
-          name: 'From assets due for replacement',
-          value: ins.sustainability.co2eTonnes.total.toFixed(1),
+          name: 'After replacement',
+          value: em.replaceable.length ? fmtT(em.replaceableAfter.total) : '—',
+          unit: em.replaceable.length ? 't CO₂e / yr' : undefined,
+          tone: em.replaceableAfter.total < em.replaceableNow.total ? 'good' : 'neutral',
+          info: 'Predicted Scope 1 + 2 + 3 per year if the over-used assets are replaced with current-generation models.',
+          logic: 'emissions',
+        },
+        {
+          name: 'Whole-fleet emissions',
+          value: fmtT(em.fleet.total),
           unit: 't CO₂e / yr',
-          info: "Annual CO2e of critical and past-end-of-life assets only. Same figure as the dashboard's Sustainability card.",
-          logic: 'carbon',
-          missing: hasCo2 ? undefined : 'Add the “Annual CO2e” column to see this.',
+          info: 'Scope 1 + 2 + 3 per year for every asset in this selection.',
+          logic: 'emissions',
+        },
+        {
+          name: 'Whole-fleet electricity',
+          value: fmtT(em.fleet.kWh / 1000),
+          unit: 'MWh / yr',
+          info: 'Electricity used per year by every asset in this selection.',
+          logic: 'emissions',
         },
         {
           name: 'Global Pollution Index',

@@ -39,6 +39,11 @@ export interface ImportedAsset {
   replacementCost?: number
   annualCO2e?: number
   powerWatts?: number
+  usageHoursPerYear?: number
+  replacementProduct?: string
+  scope1Tco2e?: number
+  scope2Tco2e?: number
+  scope3Tco2e?: number
 }
 
 export interface CalculatedMetrics {
