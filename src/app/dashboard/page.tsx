@@ -366,9 +366,10 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-neutral-900">Regulations in scope</h2>
                   <InfoTip title="Regulations in scope">
-                    Regulation categories your assets fall under, based on asset type and country, with how many assets each
-                    covers and how many are compliant. Each country applies its own law within a category. Frameworks such as
-                    ISO 27001, SOC 2 and NIST carry no government fine. Click a category to filter by it.
+                    Regulation categories your assets fall under, based on asset type and the law of each asset&apos;s country.
+                    The percentage is the share of assets in scope that meet your overall compliance target. Your file has one
+                    Compliance Score per asset, not one per regulation. Frameworks such as ISO 27001 only appear if switched on
+                    in Settings. Click a category to filter by it.
                   </InfoTip>
                 </div>
                 {compliance.regulations.length === 0 ? (
@@ -387,7 +388,7 @@ export default function Dashboard() {
                         <div className="flex justify-between items-baseline gap-3 text-sm mb-1.5">
                           <span className="font-medium text-neutral-900">{s.name}</span>
                           <span className="text-neutral-500 whitespace-nowrap">
-                            <span className={`font-semibold ${rateTone(s.rate)}`}>{s.rate}%</span> · {s.compliant} of {s.inScope} assets
+                            <span className={`font-semibold ${rateTone(s.rate)}`}>{s.rate}%</span> · {s.compliant} of {s.inScope} meet target
                           </span>
                         </div>
                         <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">

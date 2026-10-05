@@ -313,18 +313,46 @@ const FRAMEWORK = (law: string, citation: string, condition?: string): LawEntry 
   condition,
 })
 
+// ---- Organisation profile: frameworks and conditional laws apply only when switched on ----
+
+export type OrgScopeKey = 'ISO 27001' | 'SOC 2' | 'PCI DSS' | 'HIPAA' | 'NIST' | 'CE'
+
+export const ORG_SCOPE_OPTIONS: Array<{ key: OrgScopeKey; label: string; help: string }> = [
+  { key: 'ISO 27001', label: 'We are ISO/IEC 27001 certified (or contractually required to follow it)', help: 'Adds Annex A 7.14 and 8.1 checks to devices that hold data.' },
+  { key: 'SOC 2', label: 'We provide services audited under SOC 2', help: 'Adds CC6.5 secure-disposal checks to servers, laptops, desktops, network and software.' },
+  { key: 'PCI DSS', label: 'We store, process or transmit payment card data', help: 'Adds PCI DSS Requirement 9.4 to devices that handle card data.' },
+  { key: 'HIPAA', label: 'We handle US health information (HIPAA)', help: 'Adds the HIPAA Security Rule to US devices that hold data, including its statutory penalty.' },
+  { key: 'NIST', label: 'We follow NIST SP 800-88 (e.g. US government contracts)', help: 'Adds media-sanitisation checks to devices that hold data.' },
+  { key: 'CE', label: 'We manufacture or import electronics into the EU', help: 'Adds CE-marking conformity for EU assets.' },
+]
+
+export type OrgProfile = Record<OrgScopeKey, boolean>
+
+export const DEFAULT_ORG_PROFILE: OrgProfile = { 'ISO 27001': false, 'SOC 2': false, 'PCI DSS': false, HIPAA: false, NIST: false, CE: false }
+
+let orgProfile: OrgProfile = DEFAULT_ORG_PROFILE
+
+/** Set by the dashboard context whenever the user changes their organisation profile. */
+export function setOrgProfile(profile: OrgProfile) {
+  orgProfile = profile
+}
+
+export function getOrgProfile(): OrgProfile {
+  return orgProfile
+}
+
 function pick(table: Record<string, LawEntry>, country: string): LawEntry | null {
   return table[country] ?? (EU_COUNTRIES.has(country) ? table.EU ?? null : null)
 }
 
-export function lawFor(standard: ComplianceStandard, country: string): LawEntry | null {
+function baseLaw(standard: ComplianceStandard, country: string): LawEntry | null {
   switch (standard) {
     case 'GDPR':
       return pick(DATA_PROTECTION, country)
     case 'EPA':
-      return pick(E_WASTE, country) ?? national('National e-waste / environmental law')
+      return pick(E_WASTE, country)
     case 'OSHA':
-      return pick(WORKPLACE_SAFETY, country) ?? national('National occupational health & safety law')
+      return pick(WORKPLACE_SAFETY, country)
     case 'RoHS':
       return pick(ROHS, country)
     case 'CE':
@@ -355,6 +383,24 @@ export function lawFor(standard: ComplianceStandard, country: string): LawEntry 
     case 'NIST':
       return FRAMEWORK('NIST SP 800-88 Rev. 1', 'Sections 4–5', 'Best practice; mandatory for some US government contracts')
   }
+}
+
+const OPT_IN = new Set<ComplianceStandard>(['ISO 27001', 'SOC 2', 'PCI DSS', 'HIPAA', 'NIST', 'CE'])
+
+/** The law that applies, or null. Frameworks and conditional laws only apply once switched on in the organisation profile. */
+export function lawFor(standard: ComplianceStandard, country: string, profile: OrgProfile = orgProfile): LawEntry | null {
+  const law = baseLaw(standard, country)
+  if (!law) return null
+  if (OPT_IN.has(standard)) {
+    if (!profile[standard as OrgScopeKey]) return null
+    return { ...law, condition: undefined }
+  }
+  return law
+}
+
+/** Reference lookup that ignores the organisation profile (Logic Library). */
+export function referenceLawFor(standard: ComplianceStandard, country: string): LawEntry | null {
+  return baseLaw(standard, country)
 }
 
 export function maxFineUSD(law: LawEntry | null): number {

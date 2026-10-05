@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, ReferenceLine } from 'recharts'
 import { PageHeader } from '@/components/common/PageHeader'
 import { FilterBar } from '@/components/dashboard/FilterBar'
+import { OrgScopePanel } from '@/components/compliance/OrgScopePanel'
 import { AssetDrawer } from '@/components/assets/AssetDrawer'
 import { Kpi, NoData, Panel, Pagination, Pill, Empty } from '@/components/common/ui'
 import { useDashboard } from '@/lib/context/dashboardContext'
@@ -91,7 +92,7 @@ export default function CompliancePage() {
     standard: r.standard,
     name: r.short,
     fullName: r.name,
-    Compliant: r.compliant,
+    'Meet target': r.compliant,
     'Below target': r.nonCompliant,
     rate: r.rate,
     exposure: r.exposure,
@@ -133,6 +134,8 @@ export default function CompliancePage() {
       <div className="p-6 space-y-6">
         <FilterBar filters={filters} onChange={updateFilters} options={options} shown={filtered.length} total={importedAssets.length} />
 
+        <OrgScopePanel compact />
+
         {filtered.length === 0 ? (
           <div className="bg-white border border-neutral-200 rounded-xl p-10 text-center text-neutral-500">No assets match these filters.</div>
         ) : (
@@ -170,7 +173,7 @@ export default function CompliancePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Panel
                 title="Compliance by regulation"
-                info="For each regulation category your assets fall under: how many assets it covers, and how many of those meet the target. Each country applies its own law within a category. Hover a bar for possible fines; click it to filter the page."
+                info="For each regulation category your assets fall under: how many assets it covers, and how many meet your overall compliance target. Your file has one Compliance Score per asset, not one per regulation. Hover a bar for possible fines; click it to filter the page."
               >
                 {regulationData.length === 0 ? (
                   <Empty>No regulations apply to the assets in this selection.</Empty>
@@ -188,7 +191,7 @@ export default function CompliancePage() {
                             return (
                               <div className="bg-white border border-neutral-200 rounded-lg shadow-lg px-3 py-2 text-xs space-y-0.5">
                                 <p className="font-semibold text-neutral-900">{d.fullName}</p>
-                                <p className="text-neutral-700">{d.rate}% compliant · {d.Compliant} of {d.Compliant + d['Below target']} assets</p>
+                                <p className="text-neutral-700">{d.rate}% meet target · {d['Meet target']} of {d['Meet target'] + d['Below target']} assets</p>
                                 <p className="text-neutral-500">
                                   {d.exposure > 0 ? `Possible fines: ${formatMoney(d.exposure)}` : 'No fixed statutory fine'}
                                 </p>
@@ -197,7 +200,7 @@ export default function CompliancePage() {
                           }}
                         />
                         <Legend wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="Compliant" stackId="a" fill="#22c55e" maxBarSize={24} cursor="pointer" onClick={(d: any) => toggle('standard', d.standard)} />
+                        <Bar dataKey="Meet target" stackId="a" fill="#22c55e" maxBarSize={24} cursor="pointer" onClick={(d: any) => toggle('standard', d.standard)} />
                         <Bar dataKey="Below target" stackId="a" fill="#fca5a5" maxBarSize={24} radius={[0, 4, 4, 0]} cursor="pointer" onClick={(d: any) => toggle('standard', d.standard)} />
                       </BarChart>
                     </ResponsiveContainer>

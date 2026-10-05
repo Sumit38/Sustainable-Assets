@@ -5,8 +5,20 @@ import { ImportedAsset, CalculatedMetrics, calculateMetrics } from '@/lib/calcul
 import { useAuth } from '@/lib/auth/authContext'
 import { loadAssetsFromDatabase, saveAssetsToDatabase } from '@/lib/supabase/assetService'
 import { isPhysicalAssetType } from '@/lib/data/assetScope'
+import { DEFAULT_ORG_PROFILE, OrgProfile, setOrgProfile as applyOrgProfile } from '@/lib/data/complianceMatrix'
 
 const electronicOnly = (assets: ImportedAsset[]) => assets.filter(a => !isPhysicalAssetType(a.assetType))
+
+const profileKey = (userId?: string) => `assetpulse-org-profile-${userId ?? 'guest'}`
+
+function readProfile(userId?: string): OrgProfile {
+  try {
+    const raw = localStorage.getItem(profileKey(userId))
+    return raw ? { ...DEFAULT_ORG_PROFILE, ...JSON.parse(raw) } : DEFAULT_ORG_PROFILE
+  } catch {
+    return DEFAULT_ORG_PROFILE
+  }
+}
 
 interface DashboardContextType {
   importedAssets: ImportedAsset[]
@@ -14,6 +26,8 @@ interface DashboardContextType {
   setDashboardData: (assets: ImportedAsset[], metrics: CalculatedMetrics) => Promise<{ success: boolean; error?: string }>
   clearDashboardData: () => void
   loadDashboardData: () => void
+  orgProfile: OrgProfile
+  updateOrgProfile: (profile: OrgProfile) => void
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
@@ -22,11 +36,27 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [importedAssets, setImportedAssets] = useState<ImportedAsset[]>([])
   const [calculatedMetrics, setCalculatedMetrics] = useState<CalculatedMetrics | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [orgProfile, setOrgProfileState] = useState<OrgProfile>(DEFAULT_ORG_PROFILE)
   const { user } = useAuth()
+
+  const updateOrgProfile = (profile: OrgProfile) => {
+    applyOrgProfile(profile)
+    setOrgProfileState(profile)
+    try {
+      localStorage.setItem(profileKey(user?.id), JSON.stringify(profile))
+    } catch {}
+    // Pages memoise on the asset array, so hand them a new one to recalculate compliance
+    const next = [...importedAssets]
+    setImportedAssets(next)
+    setCalculatedMetrics(calculateMetrics(next))
+  }
 
   // Load data from Supabase on user auth or from localStorage only for unauthenticated users
   useEffect(() => {
     const loadData = async () => {
+      const profile = readProfile(user?.id)
+      applyOrgProfile(profile)
+      setOrgProfileState(profile)
       try {
         // If user is authenticated, ONLY load from Supabase (not localStorage to prevent data leakage)
         if (user?.id) {
@@ -140,7 +170,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <DashboardContext.Provider value={{ importedAssets, calculatedMetrics, setDashboardData, clearDashboardData, loadDashboardData }}>
+    <DashboardContext.Provider value={{ importedAssets, calculatedMetrics, setDashboardData, clearDashboardData, loadDashboardData, orgProfile, updateOrgProfile }}>
       {isLoaded && children}
     </DashboardContext.Provider>
   )

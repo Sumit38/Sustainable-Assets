@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Search, ChevronDown } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Pill, PillTone } from '@/components/common/ui'
-import { COMPLIANCE_STANDARDS, ComplianceStandard, FX_TO_USD, REFERENCE_COUNTRIES, countsTowardFine, lawFor, maxFineUSD } from '@/lib/data/complianceMatrix'
+import { COMPLIANCE_STANDARDS, ComplianceStandard, FX_TO_USD, REFERENCE_COUNTRIES, countsTowardFine, maxFineUSD, referenceLawFor } from '@/lib/data/complianceMatrix'
 import { ASSET_MATERIAL_DATABASE } from '@/lib/data/assetMaterialDatabase'
 import { EMISSION_PROFILES, GRID_FACTORS, WORLD_AVERAGE_GRID_FACTOR } from '@/lib/data/emissionReference'
 import { COMPLIANCE_THRESHOLD, formatMoney } from '@/lib/calculations/dashboardInsights'
@@ -60,7 +60,9 @@ Risk score (0–10) = Violation rate ÷ 10`,
     summary: 'The maximum penalties your assets below target could trigger under each country’s law.',
     formula: `1. Each regulation category applies only to the asset types it governs
    (e.g. data protection → devices that hold personal data; e-waste → all hardware)
-2. Within a category, each asset's country determines the law (GDPR, UK GDPR, India DPDP Act, POPIA …)
+2. Within a category, each asset's country determines the law (GDPR, UK GDPR, India DPDP Act, POPIA …);
+   a category applies only where the country has a listed law
+   Frameworks and sector rules (ISO 27001, SOC 2, PCI DSS, HIPAA, NIST, CE) apply only if switched on in Settings
 3. For every (law, country) covering at least one asset below target:
      possible fine = the fixed maximum stated in that law, counted ONCE (not per asset)
 4. Possible fines = sum over all laws and countries, converted to USD at fixed reference rates`,
@@ -234,7 +236,7 @@ export default function LogicLibraryPage() {
     })
 
   const lawRows = (Object.keys(COMPLIANCE_STANDARDS) as ComplianceStandard[]).flatMap(std =>
-    REFERENCE_COUNTRIES.map(country => ({ std, country, law: lawFor(std, country) })).filter(r => r.law !== null)
+    REFERENCE_COUNTRIES.map(country => ({ std, country, law: referenceLawFor(std, country) })).filter(r => r.law !== null)
   )
   const battery = Object.values(ASSET_MATERIAL_DATABASE).filter(p => p.isDLESuitable)
 
@@ -370,8 +372,9 @@ export default function LogicLibraryPage() {
         <section id="fine-table" className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold text-neutral-900 mb-1">Reference: laws and penalties by country</h2>
           <p className="text-sm text-neutral-500 mb-3">
-            The law each country applies within every category, with its legal reference and penalty as stated. Countries not listed
-            fall back to the EU rules (EU members) or national law with no fixed amount.
+            The law each country applies within every category, with its legal reference and penalty as stated. EU members not listed
+            use the EU rules; other countries are only covered where a law is listed here. Frameworks and sector rules (marked
+            &ldquo;Only if…&rdquo;) apply only when switched on under Settings → Your organisation&apos;s compliance scope.
           </p>
           <div className="flex flex-wrap gap-2 mb-3">
             {(Object.keys(COMPLIANCE_STANDARDS) as ComplianceStandard[]).map(std => (

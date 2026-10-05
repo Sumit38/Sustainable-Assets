@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { OrgScopePanel } from '@/components/compliance/OrgScopePanel'
 import { useAuth } from '@/lib/auth/authContext'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
@@ -57,6 +58,8 @@ export default function SettingsPage() {
             ✓ Settings saved successfully
           </div>
         )}
+
+        <OrgScopePanel />
 
         {/* General Settings */}
         <Card>
