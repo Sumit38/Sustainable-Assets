@@ -119,7 +119,7 @@ export default function DLEPage() {
         <div className="flex gap-3 bg-primary-50 border border-primary-500/20 rounded-xl p-4 text-sm text-primary-800">
           <BatteryCharging className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <p>
-            Laptops, tablets, phones, UPS systems and electric vehicles contain lithium-ion batteries. When they retire, the
+            Laptops, tablets, phones and UPS systems contain lithium-ion batteries. When they retire, the
             lithium can be recovered through recycling and Direct Lithium Extraction (DLE) instead of being mined again. Lithium
             figures use the typical content of each device type from AssetPulse&apos;s materials reference, since your file
             doesn&apos;t record battery size.
@@ -194,7 +194,7 @@ export default function DLEPage() {
 
         <Panel
           title="Where retiring assets should go"
-          info="The recommended end-of-life route for every retiring asset, by type, from the materials reference. Battery devices go to lithium recovery; furniture and other items to refurbishment, recycling or donation."
+          info="The recommended end-of-life route for every retiring asset, by type, from the materials reference. Battery devices go to lithium recovery; other electronics to refurbishment or certified e-waste recycling."
         >
           {data.pathways.length === 0 ? (
             <Empty>No assets are retiring in this selection.</Empty>

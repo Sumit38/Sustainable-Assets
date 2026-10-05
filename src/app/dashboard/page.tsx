@@ -103,7 +103,7 @@ export default function Dashboard() {
         return
       }
       if (result.assetsImported === 0) {
-        setImportError('No valid assets found in the CSV file')
+        setImportError(['No valid assets found in the CSV file.', ...result.warnings].join(' '))
         return
       }
       const assets = result.assets as ExtendedImportedAsset[]
@@ -117,7 +117,7 @@ export default function Dashboard() {
       }
       setFilters(EMPTY_FILTERS)
       setShowImport(false)
-      setImportSuccess(`Imported and saved ${assets.length} assets.`)
+      setImportSuccess([`Imported and saved ${assets.length} assets.`, ...result.warnings].join(' '))
     } catch (err) {
       setImportError(`Upload error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
@@ -214,7 +214,7 @@ export default function Dashboard() {
                 stats={[
                   { label: 'Regulations in scope', value: `${compliance.regulations.length} · ${formatNumber(compliance.assetsInScope)} assets` },
                   { label: 'Average compliance score', value: compliance.avgScore.toFixed(0), tone: compliance.avgScore >= COMPLIANCE_THRESHOLD ? 'success' : 'warning' },
-                  { label: 'Potential fines', value: formatMoney(compliance.fineExposure), tone: compliance.fineExposure > 0 ? 'danger' : 'success' },
+                  { label: 'Possible fines', value: formatMoney(compliance.fineExposure), tone: compliance.fineExposure > 0 ? 'danger' : 'success' },
                 ]}
                 info={
                   <>
@@ -222,12 +222,13 @@ export default function Dashboard() {
                     above.
                     <br />
                     <br />
-                    <strong>Regulations in scope:</strong> the regulations your assets fall under, based on each asset&apos;s type
-                    and region. These are the rules that can affect your organisation.
+                    <strong>Regulations in scope:</strong> the regulation categories your assets fall under, based on each
+                    asset&apos;s type and the law of the country it is in.
                     <br />
                     <br />
-                    <strong>Potential fines:</strong> what the {formatNumber(compliance.nonCompliantCount)} assets below target
-                    could cost, counted once per regulation that applies to them.
+                    <strong>Possible fines:</strong> for each law that covers at least one of the{' '}
+                    {formatNumber(compliance.nonCompliantCount)} assets below target, the maximum fine stated in that law,
+                    counted once per law per country (not per asset). See the Compliance page for each country&apos;s law.
                   </>
                 }
               />
@@ -258,7 +259,7 @@ export default function Dashboard() {
                 info={
                   <>
                     The total of the <em>Employees Affected</em> column for every asset that is at risk, critical or past end of
-                    life. Worn chairs, desks and equipment cause ergonomic and safety problems, so these people should be
+                    life. Faulty or ageing devices cause eye strain, overheating, battery swelling and electrical-safety risks, so these people should be
                     prioritised.
                     <br />
                     <br />
@@ -307,7 +308,7 @@ export default function Dashboard() {
                 href={`/dle${query}`}
                 missingData={
                   lithium.lithiumAssets === 0
-                    ? 'No retiring devices with lithium batteries yet (laptops, tablets, phones, UPS, EVs).'
+                    ? 'No retiring devices with lithium batteries yet (laptops, tablets, phones, UPS systems).'
                     : undefined
                 }
                 stats={[
@@ -317,7 +318,7 @@ export default function Dashboard() {
                 ]}
                 info={
                   <>
-                    Laptops, tablets, phones, UPS systems and electric vehicles due for retirement contain lithium batteries.
+                    Laptops, tablets, phones and UPS systems due for retirement contain lithium batteries.
                     Recovering it through Direct Lithium Extraction (DLE) and recycling means less new lithium has to be mined.
                     <br />
                     <br />
@@ -365,9 +366,9 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-neutral-900">Regulations in scope</h2>
                   <InfoTip title="Regulations in scope">
-                    The regulations your assets fall under, based on asset type and region, with how many assets each covers
-                    and how many of those are compliant. Potential fines apply only to the non-compliant ones; frameworks such
-                    as ISO 27001, SOC 2 and NIST carry no government fine. Click a regulation to filter by it.
+                    Regulation categories your assets fall under, based on asset type and country, with how many assets each
+                    covers and how many are compliant. Each country applies its own law within a category. Frameworks such as
+                    ISO 27001, SOC 2 and NIST carry no government fine. Click a category to filter by it.
                   </InfoTip>
                 </div>
                 {compliance.regulations.length === 0 ? (
@@ -393,11 +394,11 @@ export default function Dashboard() {
                           <div className={`h-full rounded-full ${rateBar(s.rate)}`} style={{ width: `${s.rate}%` }} />
                         </div>
                         <p className="text-xs text-neutral-500 mt-1.5">
-                          {s.isFramework
-                            ? 'Framework: no government fine'
-                            : s.nonCompliant > 0
-                              ? `Potential fines if not fixed: ${formatMoney(s.exposure)}`
-                              : 'Fully compliant: no fine exposure'}
+                          {s.nonCompliant === 0
+                            ? 'Fully compliant: no fine exposure'
+                            : s.exposure > 0
+                              ? `Possible fines if not fixed: ${formatMoney(s.exposure)}`
+                              : 'No fixed statutory fine (framework, contract or set nationally)'}
                         </p>
                       </button>
                     ))}

@@ -4,6 +4,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { ImportedAsset, CalculatedMetrics, calculateMetrics } from '@/lib/calculations/metricCalculator'
 import { useAuth } from '@/lib/auth/authContext'
 import { loadAssetsFromDatabase, saveAssetsToDatabase } from '@/lib/supabase/assetService'
+import { isPhysicalAssetType } from '@/lib/data/assetScope'
+
+const electronicOnly = (assets: ImportedAsset[]) => assets.filter(a => !isPhysicalAssetType(a.assetType))
 
 interface DashboardContextType {
   importedAssets: ImportedAsset[]
@@ -27,7 +30,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       try {
         // If user is authenticated, ONLY load from Supabase (not localStorage to prevent data leakage)
         if (user?.id) {
-          const dbAssets = await loadAssetsFromDatabase(user.id)
+          const dbAssets = electronicOnly(await loadAssetsFromDatabase(user.id))
           setImportedAssets(dbAssets)
           // Calculate metrics from loaded assets
           const metrics = calculateMetrics(dbAssets)
@@ -41,9 +44,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         // Only load localStorage if user is NOT authenticated (for demo/trial mode)
         const stored = localStorage.getItem('dashboardData')
         if (stored) {
-          const { assets, metrics } = JSON.parse(stored)
-          setImportedAssets(assets)
-          setCalculatedMetrics(metrics)
+          const { assets } = JSON.parse(stored)
+          const kept = electronicOnly(assets)
+          setImportedAssets(kept)
+          setCalculatedMetrics(calculateMetrics(kept))
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error)
@@ -53,9 +57,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const stored = localStorage.getItem('dashboardData')
           if (stored) {
             try {
-              const { assets, metrics } = JSON.parse(stored)
-              setImportedAssets(assets)
-              setCalculatedMetrics(metrics)
+              const kept = electronicOnly(JSON.parse(stored).assets)
+              setImportedAssets(kept)
+              setCalculatedMetrics(calculateMetrics(kept))
             } catch (e) {
               console.error('Failed to load from localStorage:', e)
             }
@@ -109,7 +113,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     // Load from Supabase if user is authenticated
     if (user?.id) {
       try {
-        const dbAssets = await loadAssetsFromDatabase(user.id)
+        const dbAssets = electronicOnly(await loadAssetsFromDatabase(user.id))
         setImportedAssets(dbAssets)
         // Calculate metrics from loaded assets
         const metrics = calculateMetrics(dbAssets)
@@ -126,9 +130,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem('dashboardData')
     if (stored) {
       try {
-        const { assets, metrics } = JSON.parse(stored)
-        setImportedAssets(assets)
-        setCalculatedMetrics(metrics)
+        const kept = electronicOnly(JSON.parse(stored).assets)
+        setImportedAssets(kept)
+        setCalculatedMetrics(calculateMetrics(kept))
       } catch (error) {
         console.error('Failed to load dashboard data:', error)
       }

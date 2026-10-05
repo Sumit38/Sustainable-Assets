@@ -1,7 +1,8 @@
 // CSV File Processing and Validation
 
 import { ImportedAsset } from '@/lib/calculations/metricCalculator'
-import { Region } from '@/lib/data/complianceMatrix'
+import { Region, REGIONS } from '@/lib/data/complianceMatrix'
+import { isPhysicalAssetType } from '@/lib/data/assetScope'
 
 export interface CSVValidationError {
   row: number
@@ -38,12 +39,7 @@ export interface CSVProcessingResult {
   warnings: string[]
 }
 
-const VALID_REGIONS: Region[] = [
-  'Europe (GDPR/RoHS)',
-  'North America (EPA/OSHA)',
-  'Asia Pacific (Local Regs)',
-  'Other Regions',
-]
+const VALID_REGIONS: Region[] = REGIONS
 
 const VALID_HEALTH_STATUSES = ['healthy', 'at-risk', 'critical', 'end-of-life']
 
@@ -131,6 +127,7 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
   const errors: CSVValidationError[] = []
   const assets: ImportedAsset[] = []
   const warnings: string[] = []
+  const skipped = new Map<string, number>()
 
   if (rows.length < 2) {
     return {
@@ -186,6 +183,10 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
       // Extract and validate required fields
       const assetId = row[headerMap['Asset ID']]?.trim()
       const assetType = row[headerMap['Asset Type']]?.trim()
+      if (isPhysicalAssetType(assetType)) {
+        skipped.set(assetType!, (skipped.get(assetType!) ?? 0) + 1)
+        continue
+      }
       const productName = row[headerMap['Product Name']]?.trim()
       const manufacturer = row[headerMap['Manufacturer']]?.trim()
       const dateOfManufacture = row[headerMap['Date of Manufacture']]?.trim()
@@ -398,6 +399,12 @@ export function validateAndProcessCSV(csvContent: string): CSVProcessingResult {
         value: row.join(', '),
       })
     }
+  }
+
+  if (skipped.size > 0) {
+    const total = Array.from(skipped.values()).reduce((a, b) => a + b, 0)
+    const detail = Array.from(skipped.entries()).map(([t, n]) => `${t} ×${n}`).join(', ')
+    warnings.push(`Skipped ${total} physical assets (${detail}). AssetPulse covers electronic and digital assets only.`)
   }
 
   return {

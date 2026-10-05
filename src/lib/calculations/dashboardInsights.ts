@@ -2,8 +2,9 @@ import { ImportedAsset } from '@/lib/calculations/metricCalculator'
 import {
   COMPLIANCE_STANDARDS,
   ComplianceStandard,
-  Region,
+  countsTowardFine,
   getApplicableStandards,
+  possibleFines,
 } from '@/lib/data/complianceMatrix'
 import { getAssetProfile } from '@/lib/data/assetMaterialDatabase'
 
@@ -63,7 +64,7 @@ function effectiveHealth(asset: ImportedAsset): HealthBucket {
 }
 
 function standardsFor(asset: ImportedAsset): ComplianceStandard[] {
-  return getApplicableStandards(asset.assetType, asset.region as Region)
+  return getApplicableStandards(asset.assetType, asset.country)
 }
 
 export function filterAssets(assets: ImportedAsset[], f: DashboardFilters): ImportedAsset[] {
@@ -104,8 +105,6 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
   const poorCondition = assets.filter(a => effectiveHealth(a) !== 'healthy')
   const nonCompliant = assets.filter(a => a.complianceScore < COMPLIANCE_THRESHOLD)
 
-  // Compliance: each non-compliant asset counts once per regulation that applies to it
-  const byStandard = new Map<ComplianceStandard, number>()
   const byRegion = new Map<string, { total: number; nonCompliant: number; pastEol: number }>()
   for (const a of assets) {
     const r = byRegion.get(a.region) ?? { total: 0, nonCompliant: 0, pastEol: 0 }
@@ -114,6 +113,14 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
     if (isPastEndOfLife(a)) r.pastEol++
     byRegion.set(a.region, r)
   }
+
+  // Possible fines: each law's fixed statutory maximum, once per law per country
+  const fines = possibleFines(assets, COMPLIANCE_THRESHOLD, selectedStandard)
+  const fineExposure = fines.total
+  const fineByStandard = new Map<ComplianceStandard, number>()
+  for (const l of fines.lines) fineByStandard.set(l.standard, (fineByStandard.get(l.standard) ?? 0) + l.possibleFineUSD)
+
+  const byStandard = new Map<ComplianceStandard, number>()
   for (const a of nonCompliant) {
     for (const s of standardsFor(a)) {
       if (selectedStandard !== ALL && s !== selectedStandard) continue
@@ -123,17 +130,9 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
   const standards = Array.from(byStandard.entries())
     .map(([standard, count]) => {
       const info = COMPLIANCE_STANDARDS[standard]
-      return {
-        standard,
-        name: info.name,
-        count,
-        finePerViolation: info.finePerViolation,
-        exposure: count * info.finePerViolation,
-        risk: info.risk,
-      }
+      return { standard, name: info.name, short: info.short, count, exposure: fineByStandard.get(standard) ?? 0, risk: info.risk }
     })
     .sort((a, b) => b.exposure - a.exposure || b.count - a.count)
-  const fineExposure = standards.reduce((s, x) => s + x.exposure, 0)
 
   const scope = new Map<ComplianceStandard, { inScope: number; compliant: number }>()
   let assetsInScope = 0
@@ -150,18 +149,41 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
   const regulations = Array.from(scope.entries())
     .map(([standard, r]) => {
       const info = COMPLIANCE_STANDARDS[standard]
+      const lines = fines.lines.filter(l => l.standard === standard)
       return {
         standard,
         name: info.name,
+        short: info.short,
         inScope: r.inScope,
         compliant: r.compliant,
         nonCompliant: r.inScope - r.compliant,
         rate: Math.round((r.compliant / r.inScope) * 100),
-        exposure: (r.inScope - r.compliant) * info.finePerViolation,
-        isFramework: info.finePerViolation === 0,
+        exposure: fineByStandard.get(standard) ?? 0,
+        hasFixedFine: lines.some(l => countsTowardFine(l.law)),
       }
     })
     .sort((a, b) => b.inScope - a.inScope)
+
+  const countryMap = new Map<string, { total: number; compliant: number }>()
+  for (const a of assets) {
+    const c = countryMap.get(a.country) ?? { total: 0, compliant: 0 }
+    c.total++
+    if (a.complianceScore >= COMPLIANCE_THRESHOLD) c.compliant++
+    countryMap.set(a.country, c)
+  }
+  const countries = Array.from(countryMap.entries())
+    .map(([country, c]) => {
+      const lines = fines.lines.filter(l => l.country === country)
+      return {
+        country,
+        total: c.total,
+        compliant: c.compliant,
+        rate: Math.round((c.compliant / c.total) * 100),
+        possibleFine: lines.reduce((s, l) => s + l.possibleFineUSD, 0),
+        lines,
+      }
+    })
+    .sort((a, b) => b.possibleFine - a.possibleFine || b.total - a.total)
 
   const employees = sumProvided(poorCondition, a => a.employeesAffected)
   const allEmployees = sumProvided(assets, a => a.employeesAffected)
@@ -231,6 +253,8 @@ export function computeInsights(assets: ImportedAsset[], selectedStandard: strin
       avgScore: avgComplianceScore,
       assetsInScope,
       regulations,
+      countries,
+      fineLines: fines.lines,
       fineExposure,
       standards,
       regions: Array.from(byRegion.entries())

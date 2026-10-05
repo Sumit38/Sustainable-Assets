@@ -77,7 +77,7 @@ export default function WelcomePage() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'Compliance rate', value: `${ins.compliance.complianceRate}%`, sub: `${formatMoney(ins.compliance.fineExposure)} potential fines`, href: '/compliance' },
+                { label: 'Compliance rate', value: `${ins.compliance.complianceRate}%`, sub: `${formatMoney(ins.compliance.fineExposure)} possible fines`, href: '/compliance' },
                 { label: 'Employees exposed', value: formatNumber(ins.health.employees.total), sub: `${ins.health.poorConditionCount} assets in poor condition`, href: '/assets?status=poor' },
                 {
                   label: 'Emissions after replacement',

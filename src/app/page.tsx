@@ -46,7 +46,7 @@ const PILLARS: Array<{ icon: ReactNode; tone: string; title: string; question: s
     tone: 'bg-success-50 text-success-600',
     title: 'Compliance',
     question: 'Which regulations do our assets fall under, and how compliant are we?',
-    answer: 'Compliance rate by region, regulation and department, with the potential fines if gaps aren’t closed.',
+    answer: 'Compliance rate by region, regulation and department, with the possible fines under each country’s law if gaps aren’t closed.',
   },
   {
     icon: <HeartPulse className="w-6 h-6" />,
@@ -67,7 +67,7 @@ const PILLARS: Array<{ icon: ReactNode; tone: string; title: string; question: s
     tone: 'bg-sky-50 text-sky-600',
     title: 'Lithium recovery',
     question: 'How much lithium can our retiring devices return?',
-    answer: 'Recoverable lithium from laptops, phones, UPS units and EVs, and the mining emissions it avoids.',
+    answer: 'Recoverable lithium from laptops, tablets, phones and UPS units, and the mining emissions it avoids.',
   },
 ]
 

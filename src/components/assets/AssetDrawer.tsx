@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react'
 import { X } from 'lucide-react'
 import { ImportedAsset } from '@/lib/calculations/metricCalculator'
-import { Region, getApplicableStandards } from '@/lib/data/complianceMatrix'
+import { getApplicableStandards } from '@/lib/data/complianceMatrix'
 import { getAssetProfile } from '@/lib/data/assetMaterialDatabase'
 import { COMPLIANCE_THRESHOLD, isPastEndOfLife } from '@/lib/calculations/dashboardInsights'
 import { HEALTH_LABEL, Pill } from '@/components/common/ui'
@@ -30,7 +30,7 @@ export function AssetDrawer({ asset, onClose }: { asset: ImportedAsset | null; o
   if (!asset) return null
   const past = isPastEndOfLife(asset)
   const health = HEALTH_LABEL[past ? 'end-of-life' : asset.healthStatus]
-  const regs = getApplicableStandards(asset.assetType, asset.region as Region)
+  const regs = getApplicableStandards(asset.assetType, asset.country)
   const profile = getAssetProfile(asset.assetType)
 
   return (

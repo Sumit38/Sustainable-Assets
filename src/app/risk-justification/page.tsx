@@ -7,7 +7,7 @@ import { Kpi, NoData, Panel, Pill, Empty, PillTone, buttonStyles } from '@/compo
 import { InfoTip } from '@/components/common/InfoTip'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { useAuth } from '@/lib/auth/authContext'
-import { COMPLIANCE_STANDARDS, ComplianceStandard, Region, getApplicableStandards } from '@/lib/data/complianceMatrix'
+import { COMPLIANCE_STANDARDS, ComplianceStandard, getApplicableStandards, standardLabel } from '@/lib/data/complianceMatrix'
 import { COMPLIANCE_THRESHOLD } from '@/lib/calculations/dashboardInsights'
 
 type Status = 'pending' | 'approved' | 'rejected' | 'remediated'
@@ -91,7 +91,7 @@ export default function RiskJustificationPage() {
     const m = new Map<ComplianceStandard, string[]>()
     for (const a of importedAssets) {
       if (a.complianceScore >= COMPLIANCE_THRESHOLD) continue
-      for (const s of getApplicableStandards(a.assetType, a.region as Region)) m.set(s, [...(m.get(s) ?? []), a.assetId])
+      for (const s of getApplicableStandards(a.assetType, a.country)) m.set(s, [...(m.get(s) ?? []), a.assetId])
     }
     return m
   }, [importedAssets])
@@ -172,7 +172,7 @@ export default function RiskJustificationPage() {
                 ) : (
                   <ul className="space-y-3">
                     {coverage.map(c => (
-                      <li key={c.std}>
+                      <li key={standardLabel(c.std)}>
                         <div className="flex justify-between text-sm mb-1">
                           <button
                             type="button"
@@ -182,7 +182,7 @@ export default function RiskJustificationPage() {
                               setShowForm(true)
                             }}
                           >
-                            {c.std}
+                            {standardLabel(c.std)}
                           </button>
                           <span className="text-neutral-500">
                             {c.covered} / {c.total}

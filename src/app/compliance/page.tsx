@@ -9,7 +9,7 @@ import { AssetDrawer } from '@/components/assets/AssetDrawer'
 import { Kpi, NoData, Panel, Pagination, Pill, Empty } from '@/components/common/ui'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { ImportedAsset } from '@/lib/calculations/metricCalculator'
-import { ComplianceStandard, Region, getApplicableStandards } from '@/lib/data/complianceMatrix'
+import { ComplianceStandard, getApplicableStandards, standardLabel } from '@/lib/data/complianceMatrix'
 import {
   ALL,
   COMPLIANCE_THRESHOLD,
@@ -89,12 +89,12 @@ export default function CompliancePage() {
 
   const regulationData = compliance.regulations.map(r => ({
     standard: r.standard,
-    name: r.standard,
+    name: r.short,
+    fullName: r.name,
     Compliant: r.compliant,
     'Below target': r.nonCompliant,
     rate: r.rate,
     exposure: r.exposure,
-    isFramework: r.isFramework,
   }))
 
   const scoreData = SCORE_BUCKETS.map(b => ({
@@ -124,7 +124,7 @@ export default function CompliancePage() {
     <div className="w-full">
       <PageHeader
         title="Compliance"
-        description="The regulations your assets fall under, and how compliant your organisation is with each"
+        description="The regulations your assets fall under in each country, how compliant you are, and the possible fines"
         homeHref="/welcome"
         showBackButton
         onBack={back}
@@ -159,18 +159,18 @@ export default function CompliancePage() {
                 info="Average of the Compliance Score column for the assets in this selection."
               />
               <Kpi
-                label="Potential fines"
+                label="Possible fines"
                 value={formatMoney(compliance.fineExposure)}
-                sub={`if the ${formatNumber(compliance.nonCompliantCount)} assets below target aren't fixed`}
+                sub={`statutory maximum across ${compliance.countries.filter(c => c.possibleFine > 0).length} countries`}
                 tone={compliance.fineExposure > 0 ? 'text-danger-600' : 'text-success-600'}
-                info="Each asset below target × the published fine per violation of every regulation that applies to its type and region. Frameworks (ISO 27001, SOC 2, NIST) carry no government fine."
+                info="For each country's law that covers at least one asset below target: the maximum fine stated in that law, counted once per law per country (not per asset). Turnover-based caps and penalties without a fixed amount are listed below but not added. Converted to USD at fixed reference rates."
               />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Panel
                 title="Compliance by regulation"
-                info="For each regulation your assets fall under: how many assets it covers, and how many of those meet the target. Hover a bar for potential fines; click it to filter the page."
+                info="For each regulation category your assets fall under: how many assets it covers, and how many of those meet the target. Each country applies its own law within a category. Hover a bar for possible fines; click it to filter the page."
               >
                 {regulationData.length === 0 ? (
                   <Empty>No regulations apply to the assets in this selection.</Empty>
@@ -180,17 +180,17 @@ export default function CompliancePage() {
                       <BarChart data={regulationData} layout="vertical" margin={{ left: 8, right: 16 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                         <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                        <YAxis type="category" dataKey="name" width={76} tick={{ fontSize: 11 }} />
+                        <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11 }} />
                         <Tooltip
                           content={({ active, payload }: any) => {
                             if (!active || !payload?.length) return null
                             const d = payload[0].payload
                             return (
                               <div className="bg-white border border-neutral-200 rounded-lg shadow-lg px-3 py-2 text-xs space-y-0.5">
-                                <p className="font-semibold text-neutral-900">{d.standard}</p>
+                                <p className="font-semibold text-neutral-900">{d.fullName}</p>
                                 <p className="text-neutral-700">{d.rate}% compliant · {d.Compliant} of {d.Compliant + d['Below target']} assets</p>
                                 <p className="text-neutral-500">
-                                  {d.isFramework ? 'Framework: no government fine' : `Potential fines: ${formatMoney(d.exposure)}`}
+                                  {d.exposure > 0 ? `Possible fines: ${formatMoney(d.exposure)}` : 'No fixed statutory fine'}
                                 </p>
                               </div>
                             )
@@ -225,6 +225,77 @@ export default function CompliancePage() {
                 <p className="text-xs text-neutral-500 mt-1">Dashed line: 90% compliance. Green 90%+, amber 75–89%, red below 75%.</p>
               </Panel>
             </div>
+
+            <Panel
+              title="Possible fines by country"
+              info="Each country's own law for every regulation category that covers at least one asset below target there, with its legal reference and the penalty exactly as the law states it. Only fixed statutory maximums without conditions are added to the possible fine, once per law per country. Values change over time: confirm with legal counsel."
+            >
+              {compliance.countries.every(c => c.lines.length === 0) ? (
+                <Empty>No assets below target in this selection, so no fines apply.</Empty>
+              ) : (
+                <div className="space-y-3">
+                  {compliance.countries
+                    .filter(c => c.lines.length > 0)
+                    .map(c => (
+                      <details key={c.country} className="group rounded-lg border border-neutral-200" open={compliance.countries.filter(x => x.lines.length > 0).length <= 2}>
+                        <summary className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 cursor-pointer list-none">
+                          <span className="font-medium text-neutral-900">
+                            {c.country}
+                            <span className="ml-2 text-xs font-normal text-neutral-500">
+                              {c.total - c.compliant} of {c.total} assets below target · {c.lines.length} laws
+                            </span>
+                          </span>
+                          <span className={`text-sm font-semibold ${c.possibleFine > 0 ? 'text-danger-600' : 'text-neutral-500'}`}>
+                            {c.possibleFine > 0 ? `up to ${formatMoney(c.possibleFine)}` : 'No fixed statutory fine'}
+                          </span>
+                        </summary>
+                        <div className="overflow-x-auto border-t border-neutral-100">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="text-left text-xs uppercase tracking-wide text-neutral-500">
+                                <th className="px-4 py-2 font-medium">Category</th>
+                                <th className="px-3 py-2 font-medium">Law & reference</th>
+                                <th className="px-3 py-2 font-medium">Penalty (as stated in law)</th>
+                                <th className="px-3 py-2 font-medium text-right">Assets</th>
+                                <th className="px-4 py-2 font-medium text-right">Possible fine</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {c.lines.map(l => (
+                                <tr key={l.standard} className="border-t border-neutral-100 align-top">
+                                  <td className="px-4 py-2 text-neutral-700 whitespace-nowrap">{standardLabel(l.standard)}</td>
+                                  <td className="px-3 py-2">
+                                    <p className="text-neutral-900">{l.law.law}</p>
+                                    <p className="text-xs text-neutral-500">{l.law.citation}</p>
+                                  </td>
+                                  <td className="px-3 py-2 text-neutral-700">
+                                    {l.law.penalty}
+                                    {l.law.condition && <p className="text-xs text-warning-700 mt-0.5">{l.law.condition}</p>}
+                                  </td>
+                                  <td className="px-3 py-2 text-right text-neutral-700">{l.assetsBelowTarget}</td>
+                                  <td className="px-4 py-2 text-right font-semibold whitespace-nowrap">
+                                    {l.possibleFineUSD > 0 ? (
+                                      <span className="text-danger-600">{formatMoney(l.possibleFineUSD)}</span>
+                                    ) : (
+                                      <span className="text-xs font-normal text-neutral-500">
+                                        {l.law.kind === 'framework' ? 'No fine' : l.law.kind === 'contractual' ? 'Contractual' : l.law.condition ? 'Conditional' : 'Not fixed'}
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </details>
+                    ))}
+                  <p className="text-xs text-neutral-500">
+                    Amounts converted to USD at fixed reference rates. &ldquo;Not fixed&rdquo; = penalty set case by case or by national law;
+                    &ldquo;Conditional&rdquo; = applies only to some organisations; neither is added to the total.
+                  </p>
+                </div>
+              )}
+            </Panel>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Panel title="Compliance score distribution" info={`How many assets fall in each score band. Bands from ${COMPLIANCE_THRESHOLD} up meet the target.`}>
@@ -307,7 +378,7 @@ export default function CompliancePage() {
                       </thead>
                       <tbody>
                         {list.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map(a => {
-                          const regs = getApplicableStandards(a.assetType, a.region as Region)
+                          const regs = getApplicableStandards(a.assetType, a.country)
                           const ok = a.complianceScore >= COMPLIANCE_THRESHOLD
                           return (
                             <tr key={a.assetId} className="border-b border-neutral-100 hover:bg-neutral-50">
@@ -339,7 +410,7 @@ export default function CompliancePage() {
                                           filters.standard === r ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-700'
                                         }`}
                                       >
-                                        {r}
+                                        {standardLabel(r)}
                                       </span>
                                     ))
                                   )}

@@ -3,6 +3,7 @@
 import React from 'react'
 import { Filter, X } from 'lucide-react'
 import { ALL, DashboardFilters, EMPTY_FILTERS } from '@/lib/calculations/dashboardInsights'
+import { standardLabel } from '@/lib/data/complianceMatrix'
 
 interface FilterBarProps {
   filters: DashboardFilters
@@ -58,7 +59,7 @@ export function FilterBar({ filters, onChange, options, shown, total }: FilterBa
               <option value={ALL}>{f.allLabel}</option>
               {options[f.optionKey].map(o => (
                 <option key={o} value={o}>
-                  {o}
+                  {f.key === 'standard' ? standardLabel(o) : o}
                 </option>
               ))}
             </select>

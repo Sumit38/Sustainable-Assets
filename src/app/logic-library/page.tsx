@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Search, ChevronDown } from 'lucide-react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Pill, PillTone } from '@/components/common/ui'
-import { COMPLIANCE_STANDARDS } from '@/lib/data/complianceMatrix'
+import { COMPLIANCE_STANDARDS, ComplianceStandard, FX_TO_USD, REFERENCE_COUNTRIES, countsTowardFine, lawFor, maxFineUSD } from '@/lib/data/complianceMatrix'
 import { ASSET_MATERIAL_DATABASE } from '@/lib/data/assetMaterialDatabase'
 import { EMISSION_PROFILES, GRID_FACTORS, WORLD_AVERAGE_GRID_FACTOR } from '@/lib/data/emissionReference'
 import { COMPLIANCE_THRESHOLD, formatMoney } from '@/lib/calculations/dashboardInsights'
@@ -56,18 +56,24 @@ Risk score (0–10) = Violation rate ÷ 10`,
   {
     id: 'fines',
     group: 'Compliance',
-    title: 'Potential fines',
-    summary: 'Regulatory penalties non-compliant assets could trigger.',
-    formula: `For each non-compliant asset:
-  for each regulation that applies to its Asset Type in its Region:
-    add that regulation's fine per violation
-Potential fines = sum of all of the above`,
+    title: 'Possible fines by country',
+    summary: 'The maximum penalties your assets below target could trigger under each country’s law.',
+    formula: `1. Each regulation category applies only to the asset types it governs
+   (e.g. data protection → devices that hold personal data; e-waste → all hardware)
+2. Within a category, each asset's country determines the law (GDPR, UK GDPR, India DPDP Act, POPIA …)
+3. For every (law, country) covering at least one asset below target:
+     possible fine = the fixed maximum stated in that law, counted ONCE (not per asset)
+4. Possible fines = sum over all laws and countries, converted to USD at fixed reference rates`,
     inputs: [
-      { name: 'Compliance Score, Asset Type, Region', source: 'file' },
-      { name: 'Regulations per type & region', source: 'reference' },
-      { name: 'Fine per violation (table below)', source: 'reference' },
+      { name: 'Compliance Score, Asset Type, Country', source: 'file' },
+      { name: 'Law, legal reference and penalty per country (table below)', source: 'reference' },
+      { name: `Compliance target of ${COMPLIANCE_THRESHOLD}`, source: 'rule' },
     ],
-    notes: ['Frameworks (ISO 27001, SOC 2, NIST) have no government fine and count as $0.'],
+    notes: [
+      'Not added to the total: turnover-based caps (e.g. “4% of turnover”), penalties without a fixed amount (“set by national law”, “unlimited on conviction”), contractual penalties (PCI DSS) and laws that apply only to some organisations (e.g. HIPAA).',
+      'Frameworks (ISO 27001, SOC 2, NIST) are not laws and carry no fine.',
+      'Penalty amounts change over time. Confirm with legal counsel before relying on them.',
+    ],
   },
   {
     id: 'health',
@@ -102,7 +108,7 @@ Average asset health = average points across assets`,
     formula: `Electricity (kWh/yr) = Power (W) × Usage hours per year ÷ 1000
    Power: your Power Watts, else the type's typical rating (older model if made 4+ years ago)
    Hours: your Usage Hours Per Year, else 2,000 office hours (8,760 for always-on equipment)
-Scope 1 (t/yr) = your Scope 1 tCO2e, else direct fuel emissions of the type (petrol vehicle 4.6 t, others 0)
+Scope 1 (t/yr) = your Scope 1 tCO2e, else 0 (electronic assets burn no fuel themselves)
 Scope 2 (t/yr) = your Scope 2 tCO2e, else Electricity × country grid factor ÷ 1000
 Scope 3 (t/yr) = your Scope 3 tCO2e, else manufacturing footprint ÷ typical lifetime
 Total = Scope 1 + Scope 2 + Scope 3
@@ -227,7 +233,9 @@ export default function LogicLibraryPage() {
       return next
     })
 
-  const standards = Object.values(COMPLIANCE_STANDARDS).sort((a, b) => b.finePerViolation - a.finePerViolation)
+  const lawRows = (Object.keys(COMPLIANCE_STANDARDS) as ComplianceStandard[]).flatMap(std =>
+    REFERENCE_COUNTRIES.map(country => ({ std, country, law: lawFor(std, country) })).filter(r => r.law !== null)
+  )
   const battery = Object.values(ASSET_MATERIAL_DATABASE).filter(p => p.isDLESuitable)
 
   return (
@@ -360,32 +368,57 @@ export default function LogicLibraryPage() {
         </section>
 
         <section id="fine-table" className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
-          <h2 className="font-semibold text-neutral-900 mb-1">Reference: fines per regulation</h2>
-          <p className="text-sm text-neutral-500 mb-3">The values AssetPulse uses for potential fines. Frameworks carry no government fine.</p>
-          <div className="overflow-x-auto -mx-5">
+          <h2 className="font-semibold text-neutral-900 mb-1">Reference: laws and penalties by country</h2>
+          <p className="text-sm text-neutral-500 mb-3">
+            The law each country applies within every category, with its legal reference and penalty as stated. Countries not listed
+            fall back to the EU rules (EU members) or national law with no fixed amount.
+          </p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {(Object.keys(COMPLIANCE_STANDARDS) as ComplianceStandard[]).map(std => (
+              <span key={std} className="text-xs text-neutral-600">
+                <strong className="text-neutral-800">{COMPLIANCE_STANDARDS[std].short}:</strong> {COMPLIANCE_STANDARDS[std].requirement}
+              </span>
+            ))}
+          </div>
+          <div className="overflow-x-auto -mx-5 max-h-[32rem] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead>
+              <thead className="sticky top-0 bg-white">
                 <tr className="text-left text-xs uppercase tracking-wide text-neutral-500 border-b border-neutral-200">
-                  <th className="px-5 py-2 font-medium">Regulation</th>
-                  <th className="px-3 py-2 font-medium">Region</th>
-                  <th className="px-3 py-2 font-medium">Risk</th>
-                  <th className="px-3 py-2 font-medium text-right">Fine per violation</th>
-                  <th className="px-5 py-2 font-medium text-right">Stated maximum</th>
+                  <th className="px-5 py-2 font-medium">Category</th>
+                  <th className="px-3 py-2 font-medium">Country</th>
+                  <th className="px-3 py-2 font-medium">Law & reference</th>
+                  <th className="px-3 py-2 font-medium">Penalty (as stated)</th>
+                  <th className="px-5 py-2 font-medium text-right">Counted as</th>
                 </tr>
               </thead>
               <tbody>
-                {standards.map(s => (
-                  <tr key={s.id} className="border-b border-neutral-100">
-                    <td className="px-5 py-2 text-neutral-900">{s.name}</td>
-                    <td className="px-3 py-2 text-neutral-600">{s.region.split(' (')[0]}</td>
-                    <td className="px-3 py-2"><Pill tone={s.risk === 'CRITICAL' ? 'danger' : s.risk === 'HIGH' ? 'warning' : 'neutral'}>{s.risk}</Pill></td>
-                    <td className="px-3 py-2 text-right font-medium text-neutral-900">{s.finePerViolation ? formatMoney(s.finePerViolation) : 'Framework, no fine'}</td>
-                    <td className="px-5 py-2 text-right text-neutral-600">{s.maxFinePossible ? formatMoney(s.maxFinePossible) : '—'}</td>
+                {lawRows.map(({ std, country, law }) => (
+                  <tr key={`${std}-${country}`} className="border-b border-neutral-100 align-top">
+                    <td className="px-5 py-2 text-neutral-700 whitespace-nowrap">{COMPLIANCE_STANDARDS[std].short}</td>
+                    <td className="px-3 py-2 text-neutral-900 whitespace-nowrap">{country}</td>
+                    <td className="px-3 py-2">
+                      <p className="text-neutral-900">{law!.law}</p>
+                      <p className="text-xs text-neutral-500">{law!.citation}</p>
+                    </td>
+                    <td className="px-3 py-2 text-neutral-700">
+                      {law!.penalty}
+                      {law!.condition && <p className="text-xs text-warning-700 mt-0.5">{law!.condition}</p>}
+                    </td>
+                    <td className="px-5 py-2 text-right whitespace-nowrap">
+                      {countsTowardFine(law) ? (
+                        <span className="font-semibold text-neutral-900">{formatMoney(maxFineUSD(law))}</span>
+                      ) : (
+                        <span className="text-xs text-neutral-500">{law!.kind === 'framework' ? 'No fine' : law!.kind === 'contractual' ? 'Contractual' : law!.condition ? 'Conditional' : 'Not fixed'}</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <p className="text-xs text-neutral-500 mt-3">
+            USD at fixed reference rates: {Object.entries(FX_TO_USD).filter(([c]) => c !== 'USD').map(([c, r]) => `1 ${c} = $${r}`).join(' · ')}.
+          </p>
         </section>
 
         <section id="lithium-table" className="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">

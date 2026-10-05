@@ -27,20 +27,6 @@ export interface CarbonEmissionFactor {
 
 // Health Impact Factors by Asset Type
 export const HEALTH_IMPACT_FACTORS: Record<string, HealthImpactFactor> = {
-  Chair: {
-    assetType: 'Chair',
-    healthIssuesPerYear: 0.15,
-    affectedEmployeesPerAsset: 1.2,
-    commonHealthIssues: ['Back pain', 'Neck strain', 'Poor posture', 'Spinal issues'],
-    ergonomicRiskLevel: 'HIGH',
-  },
-  Table: {
-    assetType: 'Table',
-    healthIssuesPerYear: 0.08,
-    affectedEmployeesPerAsset: 2.5,
-    commonHealthIssues: ['Repetitive strain injury', 'Posture issues', 'Leg discomfort'],
-    ergonomicRiskLevel: 'MEDIUM',
-  },
   Monitor: {
     assetType: 'Monitor',
     healthIssuesPerYear: 0.12,
@@ -54,13 +40,6 @@ export const HEALTH_IMPACT_FACTORS: Record<string, HealthImpactFactor> = {
     affectedEmployeesPerAsset: 1.3,
     commonHealthIssues: ['Eye strain', 'Neck pain', 'Wrist strain', 'Screen fatigue'],
     ergonomicRiskLevel: 'CRITICAL',
-  },
-  Cubicle: {
-    assetType: 'Cubicle',
-    healthIssuesPerYear: 0.10,
-    affectedEmployeesPerAsset: 1.0,
-    commonHealthIssues: ['Stress', 'Poor air circulation', 'Privacy issues'],
-    ergonomicRiskLevel: 'MEDIUM',
   },
   Hardware: {
     assetType: 'Hardware',
@@ -76,40 +55,10 @@ export const HEALTH_IMPACT_FACTORS: Record<string, HealthImpactFactor> = {
     commonHealthIssues: ['Data security stress'],
     ergonomicRiskLevel: 'LOW',
   },
-  Vehicle: {
-    assetType: 'Vehicle',
-    healthIssuesPerYear: 0.20,
-    affectedEmployeesPerAsset: 1.0,
-    commonHealthIssues: ['Accident risk', 'Emission exposure', 'Repetitive strain'],
-    ergonomicRiskLevel: 'CRITICAL',
-  },
-  'Real Estate': {
-    assetType: 'Real Estate',
-    healthIssuesPerYear: 0.05,
-    affectedEmployeesPerAsset: 50.0,
-    commonHealthIssues: ['Air quality', 'Structural safety', 'Sanitation'],
-    ergonomicRiskLevel: 'HIGH',
-  },
 }
 
 // Cost Factors by Asset Type (in USD)
 export const COST_FACTORS: Record<string, CostFactor> = {
-  Chair: {
-    assetType: 'Chair',
-    averagePurchaseCost: 350,
-    averageReplacementCost: 400,
-    annualMaintenanceCost: 25,
-    downtimeHoursPerFailure: 2,
-    downtimeCostPerHour: 75, // average employee cost
-  },
-  Table: {
-    assetType: 'Table',
-    averagePurchaseCost: 500,
-    averageReplacementCost: 550,
-    annualMaintenanceCost: 30,
-    downtimeHoursPerFailure: 3,
-    downtimeCostPerHour: 75,
-  },
   Monitor: {
     assetType: 'Monitor',
     averagePurchaseCost: 300,
@@ -125,14 +74,6 @@ export const COST_FACTORS: Record<string, CostFactor> = {
     annualMaintenanceCost: 100,
     downtimeHoursPerFailure: 8,
     downtimeCostPerHour: 150,
-  },
-  Cubicle: {
-    assetType: 'Cubicle',
-    averagePurchaseCost: 2000,
-    averageReplacementCost: 2200,
-    annualMaintenanceCost: 50,
-    downtimeHoursPerFailure: 1,
-    downtimeCostPerHour: 75,
   },
   Hardware: {
     assetType: 'Hardware',
@@ -150,40 +91,10 @@ export const COST_FACTORS: Record<string, CostFactor> = {
     downtimeHoursPerFailure: 8,
     downtimeCostPerHour: 200,
   },
-  Vehicle: {
-    assetType: 'Vehicle',
-    averagePurchaseCost: 25000,
-    averageReplacementCost: 28000,
-    annualMaintenanceCost: 2000,
-    downtimeHoursPerFailure: 48,
-    downtimeCostPerHour: 200,
-  },
-  'Real Estate': {
-    assetType: 'Real Estate',
-    averagePurchaseCost: 500000,
-    averageReplacementCost: 550000,
-    annualMaintenanceCost: 15000,
-    downtimeHoursPerFailure: 24,
-    downtimeCostPerHour: 1000,
-  },
 }
 
 // Carbon Emission Factors (in kg CO2e per asset per year, or total at EOL)
 export const CARBON_EMISSION_FACTORS: Record<string, CarbonEmissionFactor> = {
-  Chair: {
-    assetType: 'Chair',
-    scopeOneEmissions: 0,
-    scopeTwoEmissions: 0,
-    scopeThreeEmissions: 150, // manufacturing, disposal
-    methaneGenerationFactor: 0.08, // kg CH4 at end-of-life (fabric padding)
-  },
-  Table: {
-    assetType: 'Table',
-    scopeOneEmissions: 0,
-    scopeTwoEmissions: 0,
-    scopeThreeEmissions: 200,
-    methaneGenerationFactor: 0.12, // kg CH4 (wood, fabric)
-  },
   Monitor: {
     assetType: 'Monitor',
     scopeOneEmissions: 0,
@@ -198,13 +109,6 @@ export const CARBON_EMISSION_FACTORS: Record<string, CarbonEmissionFactor> = {
     scopeThreeEmissions: 250,
     methaneGenerationFactor: 0.03, // kg CH4 (plastic, metals)
   },
-  Cubicle: {
-    assetType: 'Cubicle',
-    scopeOneEmissions: 0,
-    scopeTwoEmissions: 0,
-    scopeThreeEmissions: 500,
-    methaneGenerationFactor: 0.35, // kg CH4 (foam, fabric, wood)
-  },
   Hardware: {
     assetType: 'Hardware',
     scopeOneEmissions: 0,
@@ -217,20 +121,6 @@ export const CARBON_EMISSION_FACTORS: Record<string, CarbonEmissionFactor> = {
     scopeOneEmissions: 0,
     scopeTwoEmissions: 80,
     scopeThreeEmissions: 50,
-    methaneGenerationFactor: 0.0,
-  },
-  Vehicle: {
-    assetType: 'Vehicle',
-    scopeOneEmissions: 2500,
-    scopeTwoEmissions: 100,
-    scopeThreeEmissions: 300,
-    methaneGenerationFactor: 0.0,
-  },
-  'Real Estate': {
-    assetType: 'Real Estate',
-    scopeOneEmissions: 5000,
-    scopeTwoEmissions: 3000,
-    scopeThreeEmissions: 1000,
     methaneGenerationFactor: 0.0,
   },
 }

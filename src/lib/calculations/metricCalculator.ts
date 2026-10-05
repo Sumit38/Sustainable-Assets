@@ -4,7 +4,9 @@ import {
   getApplicableStandards,
   COMPLIANCE_STANDARDS,
   ComplianceStandard,
+  REGIONS,
   Region,
+  possibleFines,
 } from '@/lib/data/complianceMatrix'
 import {
   getHealthImpactFactor,
@@ -12,6 +14,8 @@ import {
   getCarbonFactor,
   calculateMethaneCO2e,
 } from '@/lib/data/impactFactors'
+
+const COMPLIANCE_TARGET = 80
 
 export interface ImportedAsset {
   assetId: string
@@ -65,7 +69,7 @@ export interface CalculatedMetrics {
   criticalStandardsViolated: Array<{
     standard: ComplianceStandard
     assetsNonCompliant: number
-    finePerViolation: number
+    possibleFine: number
     risk: string
   }>
 
@@ -134,12 +138,7 @@ export function calculateMetrics(assets: ImportedAsset[]): CalculatedMetrics {
       potentialFineExposure: 0,
       assetsViolatingStandards: 0,
       globalComplianceRiskScore: 0,
-      violationsByRegion: {
-        'Europe (GDPR/RoHS)': 0,
-        'North America (EPA/OSHA)': 0,
-        'Asia Pacific (Local Regs)': 0,
-        'Other Regions': 0,
-      },
+      violationsByRegion: Object.fromEntries(REGIONS.map(r => [r, 0])) as Record<Region, number>,
       criticalStandardsViolated: [],
       immediateActions: [],
       year1Savings: 0,
@@ -310,66 +309,38 @@ function calculateCarbonImpact(assets: ImportedAsset[]) {
 }
 
 function calculateComplianceMetrics(assets: ImportedAsset[]) {
-  const violationsByRegion: Record<Region, number> = {
-    'Europe (GDPR/RoHS)': 0,
-    'North America (EPA/OSHA)': 0,
-    'Asia Pacific (Local Regs)': 0,
-    'Other Regions': 0,
-  }
-
-  const standardViolations: Record<ComplianceStandard, { count: number; criticalAssets: number }> = {} as Record<ComplianceStandard, { count: number; criticalAssets: number }>
-
+  const violationsByRegion = Object.fromEntries(REGIONS.map(r => [r, 0])) as Record<Region, number>
+  const counts = new Map<ComplianceStandard, number>()
   let totalAssetsViolating = 0
-  let totalFineExposure = 0
-
-  // Initialize standards
-  for (const standard of Object.keys(COMPLIANCE_STANDARDS) as ComplianceStandard[]) {
-    standardViolations[standard] = { count: 0, criticalAssets: 0 }
-  }
 
   for (const asset of assets) {
-    const applicableStandards = getApplicableStandards(asset.assetType, asset.region)
-
-    // Asset violates if compliance score < 80
-    if (asset.complianceScore < 80) {
-      violationsByRegion[asset.region]++
-      totalAssetsViolating++
-
-      // Each non-compliant asset violates all applicable standards
-      for (const standard of applicableStandards) {
-        standardViolations[standard].count++
-        if (asset.healthStatus === 'critical' || asset.healthStatus === 'end-of-life') {
-          standardViolations[standard].criticalAssets++
-        }
-      }
+    if (asset.complianceScore >= COMPLIANCE_TARGET) continue
+    totalAssetsViolating++
+    if (asset.region in violationsByRegion) violationsByRegion[asset.region]++
+    for (const standard of getApplicableStandards(asset.assetType, asset.country)) {
+      counts.set(standard, (counts.get(standard) ?? 0) + 1)
     }
   }
 
-  // Calculate fine exposure
-  for (const standard of Object.keys(standardViolations) as ComplianceStandard[]) {
-    const violation = standardViolations[standard]
-    const standardInfo = COMPLIANCE_STANDARDS[standard]
-    totalFineExposure += violation.count * standardInfo.finePerViolation
-  }
+  const fines = possibleFines(assets, COMPLIANCE_TARGET)
+  const fineByStandard = new Map<ComplianceStandard, number>()
+  for (const l of fines.lines) fineByStandard.set(l.standard, (fineByStandard.get(l.standard) ?? 0) + l.possibleFineUSD)
 
-  // Build critical standards list
-  const criticalStandards = (Object.keys(standardViolations) as ComplianceStandard[])
-    .filter(std => standardViolations[std].count > 0)
-    .map(std => ({
+  const criticalStandards = Array.from(counts.entries())
+    .map(([std, n]) => ({
       standard: std,
-      assetsNonCompliant: standardViolations[std].count,
-      finePerViolation: COMPLIANCE_STANDARDS[std].finePerViolation,
+      assetsNonCompliant: n,
+      possibleFine: Math.round(fineByStandard.get(std) ?? 0),
       risk: COMPLIANCE_STANDARDS[std].risk,
     }))
-    .sort((a, b) => (b.risk === 'CRITICAL' ? 1 : -1))
+    .sort((a, b) => b.possibleFine - a.possibleFine)
 
-  // Calculate overall risk score (0-10)
   const violationRate = assets.length > 0 ? totalAssetsViolating / assets.length : 0
   const riskScore = Math.min(10, violationRate * 10)
 
   return {
     violationRate: Math.round(violationRate * 100),
-    totalFineExposure: Math.round(totalFineExposure),
+    totalFineExposure: Math.round(fines.total),
     totalAssetsViolating,
     violationsByRegion,
     criticalStandards,

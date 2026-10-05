@@ -1,5 +1,5 @@
 /* Asset Types */
-export type AssetType = 'Chair' | 'Table' | 'Cubicle Equipment';
+export type AssetType = string;
 
 export interface Asset {
   id: string;

@@ -50,27 +50,7 @@ export const EMISSION_PROFILES: Record<string, AssetEmissionProfile> = {
   Server: same({ legacyPowerW: 300, currentPowerW: 200, hoursPerYear: ALWAYS_ON, embodiedKg: 1300, lifetimeYears: 5, scope1KgPerYear: 0 }, 'ENERGY STAR 1U rack server'),
   'Network Router': same({ legacyPowerW: 20, currentPowerW: 12, hoursPerYear: ALWAYS_ON, embodiedKg: 50, lifetimeYears: 6, scope1KgPerYear: 0 }, 'Current-generation business router'),
   'UPS System': same({ legacyPowerW: 40, currentPowerW: 20, hoursPerYear: ALWAYS_ON, embodiedKg: 200, lifetimeYears: 8, scope1KgPerYear: 0 }, 'ENERGY STAR UPS (high-efficiency mode)'),
-  Chair: same({ legacyPowerW: 0, currentPowerW: 0, hoursPerYear: 0, embodiedKg: 70, lifetimeYears: 10, scope1KgPerYear: 0 }, 'Office chair with recycled content'),
-  Table: same({ legacyPowerW: 0, currentPowerW: 0, hoursPerYear: 0, embodiedKg: 100, lifetimeYears: 15, scope1KgPerYear: 0 }, 'Table with certified wood / recycled steel'),
-  Desk: same({ legacyPowerW: 0, currentPowerW: 0, hoursPerYear: 0, embodiedKg: 120, lifetimeYears: 15, scope1KgPerYear: 0 }, 'Desk with certified wood / recycled steel'),
-  'Filing Cabinet': same({ legacyPowerW: 0, currentPowerW: 0, hoursPerYear: 0, embodiedKg: 80, lifetimeYears: 20, scope1KgPerYear: 0 }, 'Steel filing cabinet (recycled content)'),
-  'Cubicle System': same({ legacyPowerW: 0, currentPowerW: 0, hoursPerYear: 0, embodiedKg: 300, lifetimeYears: 15, scope1KgPerYear: 0 }, 'Modular workstation (recycled content)'),
-  'Electric Vehicle': same({ legacyPowerW: 0, currentPowerW: 0, hoursPerYear: 0, embodiedKg: 10000, lifetimeYears: 10, scope1KgPerYear: 0 }, 'Current-generation electric vehicle'),
-  'Gasoline Vehicle': {
-    legacyPowerW: 0,
-    currentPowerW: 0,
-    hoursPerYear: 0,
-    embodiedKg: 7000,
-    lifetimeYears: 10,
-    scope1KgPerYear: 4600,
-    replacement: { label: 'Electric vehicle', powerW: 0, embodiedKg: 10000, lifetimeYears: 10, scope1KgPerYear: 0 },
-  },
-}
-
-/** Electric vehicles are modelled by annual charging energy rather than a power rating. */
-export const VEHICLE_KWH_PER_YEAR: Record<string, { legacy: number; current: number; replacement: number }> = {
-  'Electric Vehicle': { legacy: 3000, current: 2500, replacement: 2500 },
-  'Gasoline Vehicle': { legacy: 0, current: 0, replacement: 2500 },
+  'Storage Device': same({ legacyPowerW: 30, currentPowerW: 18, hoursPerYear: ALWAYS_ON, embodiedKg: 150, lifetimeYears: 5, scope1KgPerYear: 0 }, 'ENERGY STAR network storage (NAS)'),
 }
 
 /** kg CO2e per kWh, approximate 2023 average for electricity generation. */
@@ -98,6 +78,10 @@ export const GRID_FACTORS: Record<string, number> = {
   'United Arab Emirates': 0.4,
   'United Kingdom': 0.24,
   'United States': 0.37,
+  Egypt: 0.46,
+  Kenya: 0.08,
+  Morocco: 0.63,
+  Nigeria: 0.4,
 }
 
 export const WORLD_AVERAGE_GRID_FACTOR = 0.48

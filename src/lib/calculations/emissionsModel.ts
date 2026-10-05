@@ -4,7 +4,6 @@ import {
   EMISSION_PROFILES,
   GRID_FACTORS,
   LEGACY_AGE_YEARS,
-  VEHICLE_KWH_PER_YEAR,
   WORLD_AVERAGE_GRID_FACTOR,
 } from '@/lib/data/emissionReference'
 import { CARBON_EMISSION_FACTORS, LANDFILL_CAPTURE_RATE, METHANE_GWP_MULTIPLIER } from '@/lib/data/impactFactors'
@@ -39,7 +38,6 @@ function ageYears(asset: ImportedAsset) {
 
 export function assetEmissions(asset: ImportedAsset): AssetEmissions {
   const profile = EMISSION_PROFILES[asset.assetType]
-  const vehicle = VEHICLE_KWH_PER_YEAR[asset.assetType]
   const grid = GRID_FACTORS[asset.country]
   const gridFactor = grid ?? WORLD_AVERAGE_GRID_FACTOR
   const legacy = ageYears(asset) >= LEGACY_AGE_YEARS
@@ -47,7 +45,6 @@ export function assetEmissions(asset: ImportedAsset): AssetEmissions {
 
   let kWh: number | undefined
   if (asset.powerWatts !== undefined && hours !== undefined) kWh = (asset.powerWatts * hours) / 1000
-  else if (vehicle) kWh = legacy ? vehicle.legacy : vehicle.current
   else if (profile && hours !== undefined) kWh = ((legacy ? profile.legacyPowerW : profile.currentPowerW) * hours) / 1000
 
   const fileEnergy = asset.powerWatts !== undefined || asset.usageHoursPerYear !== undefined
@@ -68,7 +65,7 @@ export function assetEmissions(asset: ImportedAsset): AssetEmissions {
   const sameModel = asset.replacementProduct?.trim().toLowerCase() === asset.productName?.trim().toLowerCase()
   if (overUsed && profile) {
     const r = profile.replacement
-    const kWhA = vehicle ? vehicle.replacement : (r.powerW * (hours ?? 0)) / 1000
+    const kWhA = (r.powerW * (hours ?? 0)) / 1000
     const s1 = r.scope1KgPerYear / 1000
     const s2 = (kWhA * gridFactor) / 1000
     const s3 = r.embodiedKg / r.lifetimeYears / 1000

@@ -155,10 +155,10 @@ export default function ScoreLibraryPage() {
           logic: 'compliance',
         },
         {
-          name: 'Potential fines',
+          name: 'Possible fines',
           value: formatMoney(ins.compliance.fineExposure),
           tone: ins.compliance.fineExposure > 0 ? 'bad' : 'good',
-          info: 'What the assets below target could cost: each one × the published fine per violation of every regulation that applies to it.',
+          info: 'For each country law covering at least one asset below target: the maximum fine stated in that law, counted once per law per country. Details per country on the Compliance page.',
           logic: 'fines',
         },
         {
@@ -223,7 +223,7 @@ export default function ScoreLibraryPage() {
           unit: 't CO₂e / yr',
           after: { value: fmtT(em.replaceableAfter[k]), now: em.replaceableNow[k], then: em.replaceableAfter[k] },
           info: [
-            'Direct emissions from fuel the asset burns (e.g. petrol vehicles). Office electronics and furniture have none.',
+            'Direct emissions from fuel burned by the asset itself. Electronic assets have none unless your file provides a Scope 1 value.',
             "Emissions from the electricity the asset uses: kWh × the country's grid emission factor.",
             "Manufacturing emissions spread over the asset's lifetime, including the replacement's own manufacturing.",
           ][i],
@@ -289,7 +289,7 @@ export default function ScoreLibraryPage() {
           name: 'Recoverable now',
           value: ins.lithium.lithiumKg.toFixed(2),
           unit: 'kg lithium',
-          info: 'Lithium in retiring battery devices (laptops, tablets, phones, UPS, EVs), from typical content per device type.',
+          info: 'Lithium in retiring battery devices (laptops, tablets, phones, UPS systems), from typical content per device type.',
           logic: 'lithium',
         },
         {

@@ -111,7 +111,7 @@ export default function ReportsPage() {
         ? `${worstType.type} is the weakest asset type, averaging a compliance score of ${worstType.score} across ${worstType.n} assets.`
         : `Every asset type averages at or above the target; the lowest is ${worstType.type} at ${worstType.score}.`),
     worstRegion && worstRegion.nonCompliant > 0 && `${worstRegion.region} has the most non-compliant assets (${worstRegion.nonCompliant} of ${worstRegion.total}).`,
-    topReg && `${topReg.name} carries the largest potential fine: ${formatMoney(topReg.exposure)} across ${topReg.count} assets.`,
+    topReg && topReg.exposure > 0 && `${topReg.name} carries the largest possible fine: up to ${formatMoney(topReg.exposure)} across the countries where ${topReg.count} assets are below target.`,
     `${budget.reaching} assets are overdue or reach end of support in the next two years. Replacement cost for the overdue ones and the next 12 months is ${formatMoney(budget.next12)} (${budget.next12WithCost} assets with a Replacement Cost).`,
     health.employees.withData > 0 && `${health.employees.total.toLocaleString()} employees work with assets in poor condition.`,
   ].filter(Boolean) as string[]
@@ -182,7 +182,7 @@ export default function ReportsPage() {
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <Kpi label="Need action now" value={insights.actionCount.toString()} sub={`${pct(insights.actionCount)}% of assets`} tone="text-danger-600" />
           <Kpi label="Non-compliant" value={compliance.nonCompliantCount.toString()} sub={`score below ${COMPLIANCE_THRESHOLD}`} tone="text-danger-600" />
-          <Kpi label="Potential fines" value={formatMoney(compliance.fineExposure)} sub="published fines × applicable regulations" />
+          <Kpi label="Possible fines" value={formatMoney(compliance.fineExposure)} sub="statutory maximum, once per law per country" />
           <Kpi
             label="Replacement cost, next 12 months"
             value={formatMoney(budget.next12)}

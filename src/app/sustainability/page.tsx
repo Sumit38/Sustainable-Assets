@@ -134,7 +134,7 @@ export default function SustainabilityPage() {
                 afterValue={after.scope1}
                 format={t}
                 source={srcLabel(coverage.scope1FromFile)}
-                info="Direct emissions from fuel the asset burns itself, e.g. petrol vehicles. Office electronics and furniture have none. Uses your Scope 1 tCO2e column where provided."
+                info="Direct emissions from fuel burned by the asset itself. Electronic assets have none, so this stays at zero unless your Scope 1 tCO2e column provides a value."
               />
               <CompareKpi
                 label="Scope 2 emissions"
@@ -282,7 +282,7 @@ export default function SustainabilityPage() {
 
           <Panel
             title="Methane if over-used assets go to landfill"
-            info="Methane (CH₄) released as materials such as foam, fabric and wood decompose in landfill. Assumes 65% is captured at the landfill and the rest escapes; CH₄ is counted at 28× CO₂ (100-year warming potential). Recycling or refurbishing avoids all of it."
+            info="Methane (CH₄) released as organic parts of electronics (e.g. packaging residues, some plastics and board materials) decompose in landfill. Electronics release far less methane than organic waste; their main end-of-life risk is toxic e-waste. Assumes 65% is captured at the landfill; CH₄ counts as 28× CO₂ (100-year warming potential). Certified e-waste recycling avoids all of it."
           >
             {methane.assets === 0 ? (
               <Empty>
