@@ -131,6 +131,11 @@ export const COMPLIANCE_STANDARDS: Record<ComplianceStandard, ComplianceStandard
 // ---- Asset scope: which asset types each category governs -----------------------------
 
 const DATA_BEARING = new Set(['Laptop', 'Desktop Computer', 'Smartphone', 'Tablet', 'Server', 'Printer', 'Network Router', 'Storage Device', 'Software'])
+
+export function holdsPersonalData(assetType: string): boolean {
+  return DATA_BEARING.has(assetType)
+}
+
 const CARD_DATA = new Set(['Server', 'Desktop Computer', 'Laptop', 'Network Router', 'POS Terminal', 'Software'])
 const SERVICE_CONTROLS = new Set(['Server', 'Software', 'Network Router', 'Laptop', 'Desktop Computer', 'Storage Device'])
 const isHardware = (t: string) => t !== 'Software'

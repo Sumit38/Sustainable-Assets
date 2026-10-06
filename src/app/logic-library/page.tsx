@@ -78,6 +78,35 @@ Risk score (0–10) = Violation rate ÷ 10`,
     ],
   },
   {
+    id: 'risk-prediction',
+    group: 'Compliance',
+    title: 'Predicted compliance risk & expected fine exposure',
+    summary: 'A risk score per asset from objective signals, and the fines that risk could lead to.',
+    formula: `Risk score (0–100) = sum of the signals that apply, capped at 100
+  Past end of vendor support ............................. +35
+  Support ends within 6 months ........................... +20   (within 12 months: +10)
+  Older than its typical lifetime ........................ +15   (75–100% of lifetime: +8)
+  Holds data (in scope of data-protection law) ........... +15
+  Health status critical ................................. +15   (at risk: +8)
+  Self-reported compliance score below target ............ +10
+Band: High 67+ · Medium 34–66 · Low below 34
+Likelihood = risk score ÷ 100
+
+Expected exposure per law & country = statutory maximum × likelihood × country factor
+  range: average likelihood (low) to highest likelihood (high) of the assets the law covers
+  country factor: 1.0 = neutral (default); editable in Settings`,
+    inputs: [
+      { name: 'Last Date of Support, Date of Manufacture, Health Status, Asset Type, Country', source: 'file' },
+      { name: 'Typical lifetime per asset type, laws & maximum fines', source: 'reference' },
+      { name: 'Signal weights, bands, neutral country factor', source: 'rule' },
+      { name: 'Compliance Score (low-weight signal)', source: 'file' },
+    ],
+    notes: [
+      'This is a transparent weighted model, not a trained machine-learning model. It can be calibrated once real audit outcomes are recorded.',
+      'Only laws with a fixed statutory maximum are included in the expected exposure.',
+    ],
+  },
+  {
     id: 'health',
     group: 'Employee health',
     title: 'Employees exposed',

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { OrgScopePanel } from '@/components/compliance/OrgScopePanel'
+import { CountryFactorsPanel } from '@/components/compliance/CountryFactorsPanel'
 import { useAuth } from '@/lib/auth/authContext'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/common/Card'
@@ -60,6 +61,8 @@ export default function SettingsPage() {
         )}
 
         <OrgScopePanel />
+
+        <CountryFactorsPanel />
 
         {/* General Settings */}
         <Card>

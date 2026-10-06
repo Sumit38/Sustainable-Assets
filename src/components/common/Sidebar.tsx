@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Battery,
   ShieldAlert,
+  Radar,
 } from 'lucide-react'
 
 const navigation = [
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Assets', href: '/assets', icon: Package },
   { name: 'Compliance', href: '/compliance', icon: ShieldAlert },
+  { name: 'Risk Prediction', href: '/risk-prediction', icon: Radar },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Sustainability', href: '/sustainability', icon: Leaf },

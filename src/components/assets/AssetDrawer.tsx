@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 import { ImportedAsset } from '@/lib/calculations/metricCalculator'
 import { getApplicableStandards } from '@/lib/data/complianceMatrix'
 import { getAssetProfile } from '@/lib/data/assetMaterialDatabase'
+import { assetRisk } from '@/lib/calculations/riskModel'
 import { COMPLIANCE_THRESHOLD, isPastEndOfLife } from '@/lib/calculations/dashboardInsights'
 import { HEALTH_LABEL, Pill } from '@/components/common/ui'
 
@@ -32,6 +33,7 @@ export function AssetDrawer({ asset, onClose }: { asset: ImportedAsset | null; o
   const health = HEALTH_LABEL[past ? 'end-of-life' : asset.healthStatus]
   const regs = getApplicableStandards(asset.assetType, asset.country)
   const profile = getAssetProfile(asset.assetType)
+  const risk = assetRisk(asset)
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label={`Asset ${asset.assetId}`}>
@@ -81,6 +83,27 @@ export function AssetDrawer({ asset, onClose }: { asset: ImportedAsset | null; o
                 value={regs.length ? <span className="flex flex-wrap justify-end gap-1">{regs.map(r => <Pill key={r}>{r}</Pill>)}</span> : 'None mapped'}
               />
             </dl>
+          </section>
+
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400 mb-1">Predicted compliance risk</h3>
+            <div className="flex items-center gap-2 py-2">
+              <span className="text-2xl font-bold text-neutral-900">{risk.score}</span>
+              <span className="text-sm text-neutral-500">/ 100</span>
+              <Pill tone={risk.band === 'High' ? 'danger' : risk.band === 'Medium' ? 'warning' : 'success'}>{risk.band}</Pill>
+            </div>
+            {risk.reasons.length === 0 ? (
+              <p className="text-sm text-neutral-500">No risk signals.</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {risk.reasons.map(r => (
+                  <li key={r.key} className="flex justify-between gap-3">
+                    <span className="text-neutral-700">{r.label}</span>
+                    <span className="text-neutral-500 whitespace-nowrap">+{r.points}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <section>

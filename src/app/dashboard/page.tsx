@@ -12,6 +12,7 @@ import { validateAndProcessCSV, ExtendedImportedAsset } from '@/lib/import/csvPr
 import { calculateMetrics } from '@/lib/calculations/metricCalculator'
 import { useDashboard } from '@/lib/context/dashboardContext'
 import { summariseEmissions } from '@/lib/calculations/emissionsModel'
+import { riskSummary } from '@/lib/calculations/riskModel'
 import {
   ALL,
   COMPLIANCE_THRESHOLD,
@@ -87,6 +88,7 @@ export default function Dashboard() {
   const filtered = useMemo(() => filterAssets(importedAssets, filters), [importedAssets, filters])
   const insights = useMemo(() => computeInsights(filtered, filters.standard), [filtered, filters.standard])
   const emissions = useMemo(() => summariseEmissions(filtered), [filtered])
+  const risk = useMemo(() => riskSummary(filtered), [filtered])
 
   const setFilter = (key: keyof DashboardFilters, value: string) =>
     setFilters(f => ({ ...f, [key]: f[key] === value ? ALL : value }))
@@ -213,7 +215,7 @@ export default function Dashboard() {
                 href={`/compliance${query}`}
                 stats={[
                   { label: 'Regulations in scope', value: `${compliance.regulations.length} · ${formatNumber(compliance.assetsInScope)} assets` },
-                  { label: 'Average compliance score', value: compliance.avgScore.toFixed(0), tone: compliance.avgScore >= COMPLIANCE_THRESHOLD ? 'success' : 'warning' },
+                  { label: 'Predicted high-risk assets', value: formatNumber(risk.bands.High), tone: risk.bands.High > 0 ? 'danger' : 'success' },
                   { label: 'Possible fines', value: formatMoney(compliance.fineExposure), tone: compliance.fineExposure > 0 ? 'danger' : 'success' },
                 ]}
                 info={

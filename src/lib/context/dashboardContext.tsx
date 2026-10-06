@@ -10,6 +10,15 @@ import { DEFAULT_ORG_PROFILE, OrgProfile, setOrgProfile as applyOrgProfile } fro
 const electronicOnly = (assets: ImportedAsset[]) => assets.filter(a => !isPhysicalAssetType(a.assetType))
 
 const profileKey = (userId?: string) => `assetpulse-org-profile-${userId ?? 'guest'}`
+const factorsKey = (userId?: string) => `assetpulse-country-factors-${userId ?? 'guest'}`
+
+function readFactors(userId?: string): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(factorsKey(userId)) || '{}')
+  } catch {
+    return {}
+  }
+}
 
 function readProfile(userId?: string): OrgProfile {
   try {
@@ -28,6 +37,8 @@ interface DashboardContextType {
   loadDashboardData: () => void
   orgProfile: OrgProfile
   updateOrgProfile: (profile: OrgProfile) => void
+  countryFactors: Record<string, number>
+  updateCountryFactors: (factors: Record<string, number>) => void
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
@@ -37,7 +48,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [calculatedMetrics, setCalculatedMetrics] = useState<CalculatedMetrics | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [orgProfile, setOrgProfileState] = useState<OrgProfile>(DEFAULT_ORG_PROFILE)
+  const [countryFactors, setCountryFactors] = useState<Record<string, number>>({})
   const { user } = useAuth()
+
+  const updateCountryFactors = (factors: Record<string, number>) => {
+    setCountryFactors(factors)
+    try {
+      localStorage.setItem(factorsKey(user?.id), JSON.stringify(factors))
+    } catch {}
+  }
 
   const updateOrgProfile = (profile: OrgProfile) => {
     applyOrgProfile(profile)
@@ -57,6 +76,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const profile = readProfile(user?.id)
       applyOrgProfile(profile)
       setOrgProfileState(profile)
+      setCountryFactors(readFactors(user?.id))
       try {
         // If user is authenticated, ONLY load from Supabase (not localStorage to prevent data leakage)
         if (user?.id) {
@@ -170,7 +190,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <DashboardContext.Provider value={{ importedAssets, calculatedMetrics, setDashboardData, clearDashboardData, loadDashboardData, orgProfile, updateOrgProfile }}>
+    <DashboardContext.Provider value={{ importedAssets, calculatedMetrics, setDashboardData, clearDashboardData, loadDashboardData, orgProfile, updateOrgProfile, countryFactors, updateCountryFactors }}>
       {isLoaded && children}
     </DashboardContext.Provider>
   )
