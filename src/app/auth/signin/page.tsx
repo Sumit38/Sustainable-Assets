@@ -110,19 +110,6 @@ export default function SignInPage() {
             </Link>
           </p>
         </div>
-
-        {/* Demo Credentials */}
-        <Card className="mt-6 bg-blue-50 border-blue-200">
-          <CardBody>
-            <p className="text-xs font-semibold text-blue-900 mb-2">Demo Account:</p>
-            <p className="text-xs text-blue-800">
-              Email: <code className="bg-blue-100 px-2 py-1 rounded">demo@example.com</code>
-            </p>
-            <p className="text-xs text-blue-800 mt-1">
-              Password: <code className="bg-blue-100 px-2 py-1 rounded">demo123456</code>
-            </p>
-          </CardBody>
-        </Card>
       </div>
     </div>
   )

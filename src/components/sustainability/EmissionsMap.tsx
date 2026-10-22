@@ -1,8 +1,20 @@
 'use client'
 
-import React, { useMemo, useRef, useState } from 'react'
-import { ComposableMap, Geographies, Geography, Marker, Sphere, Graticule } from 'react-simple-maps'
-import { geoCentroid } from 'd3-geo'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { geoCentroid, geoEqualEarth, geoGraticule10, geoPath } from 'd3-geo'
+import { feature } from 'topojson-client'
+import type { Feature, Geometry } from 'geojson'
+
+type CountryFeature = Feature<Geometry, { name: string }>
+
+const WIDTH = 800
+const HEIGHT = 400
+const projection = geoEqualEarth().scale(150).translate([WIDTH / 2, HEIGHT / 2])
+const path = geoPath(projection)
+const SPHERE_PATH = path({ type: 'Sphere' }) ?? undefined
+const GRATICULE_PATH = path(geoGraticule10()) ?? undefined
+
+let worldCache: CountryFeature[] | null = null
 
 export interface CountryEmissions {
   country: string
@@ -38,7 +50,24 @@ export function EmissionsMap({ data }: { data: CountryEmissions[] }) {
   const [metric, setMetric] = useState<Metric>('total')
   const [hover, setHover] = useState<{ c: CountryEmissions; x: number; y: number } | null>(null)
   const box = useRef<HTMLDivElement>(null)
+  const [countries, setCountries] = useState<CountryFeature[]>(worldCache ?? [])
   const m = METRICS[metric]
+
+  useEffect(() => {
+    if (worldCache) return
+    let cancelled = false
+    fetch('/maps/countries-50m.json')
+      .then(r => r.json())
+      .then(topo => {
+        const fc = feature(topo, topo.objects.countries) as unknown as { features: CountryFeature[] }
+        worldCache = fc.features
+        if (!cancelled) setCountries(fc.features)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const byAtlasName = useMemo(() => new Map(data.map(d => [ATLAS_NAMES[d.country] ?? d.country, d])), [data])
   const max = Math.max(0, ...data.map(m.value))
@@ -77,53 +106,49 @@ export function EmissionsMap({ data }: { data: CountryEmissions[] }) {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div ref={box} className="relative xl:col-span-2 rounded-lg border border-neutral-200 bg-sky-50/40 overflow-hidden">
-          <ComposableMap projection="geoEqualEarth" projectionConfig={{ scale: 150 }} width={800} height={400} style={{ width: '100%', height: 'auto' }}>
-            <Sphere id="sphere" fill="transparent" stroke="#e2e8f0" strokeWidth={0.5} />
-            <Graticule stroke="#e2e8f0" strokeWidth={0.4} />
-            <Geographies geography="/maps/countries-50m.json">
-              {({ geographies }) => (
-                <>
-                  {geographies.map(geo => {
-                    const d = byAtlasName.get(geo.properties.name)
-                    const v = d ? m.value(d) : 0
-                    return (
-                      <Geography
-                        key={geo.rsmKey}
-                        geography={geo}
-                        onMouseMove={d ? onMove(d) : undefined}
-                        onMouseLeave={() => setHover(null)}
-                        style={{
-                          default: { fill: d ? mix(m.light, m.dark, max > 0 ? v / max : 0) : '#f1f5f9', stroke: '#cbd5e1', strokeWidth: 0.3, outline: 'none' },
-                          hover: { fill: d ? m.dark : '#f1f5f9', stroke: '#64748b', strokeWidth: 0.5, outline: 'none' },
-                          pressed: { outline: 'none' },
-                        }}
-                      />
-                    )
-                  })}
-                  {geographies
-                    .filter(geo => byAtlasName.has(geo.properties.name))
-                    .map(geo => {
-                      const d = byAtlasName.get(geo.properties.name)!
-                      const v = m.value(d)
-                      return (
-                        <Marker key={`m-${geo.rsmKey}`} coordinates={geoCentroid(geo) as [number, number]}>
-                          <circle
-                            r={3 + (max > 0 ? Math.sqrt(v / max) * 9 : 0)}
-                            fill={m.dark}
-                            fillOpacity={0.55}
-                            stroke="#fff"
-                            strokeWidth={1}
-                            onMouseMove={onMove(d)}
-                            onMouseLeave={() => setHover(null)}
-                            style={{ cursor: 'pointer' }}
-                          />
-                        </Marker>
-                      )
-                    })}
-                </>
-              )}
-            </Geographies>
-          </ComposableMap>
+          <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full h-auto" role="img" aria-label={`World map of ${m.label.toLowerCase()} by country`}>
+            <path d={SPHERE_PATH} fill="transparent" stroke="#e2e8f0" strokeWidth={0.5} />
+            <path d={GRATICULE_PATH} fill="none" stroke="#e2e8f0" strokeWidth={0.4} />
+            {countries.map((geo, i) => {
+              const d = byAtlasName.get(geo.properties.name)
+              const v = d ? m.value(d) : 0
+              return (
+                <path
+                  key={`${geo.properties.name}-${i}`}
+                  d={path(geo) ?? undefined}
+                  fill={d ? mix(m.light, m.dark, max > 0 ? v / max : 0) : '#f1f5f9'}
+                  stroke="#cbd5e1"
+                  strokeWidth={0.3}
+                  className={d ? 'cursor-pointer hover:brightness-90' : undefined}
+                  onMouseMove={d ? onMove(d) : undefined}
+                  onMouseLeave={() => setHover(null)}
+                />
+              )
+            })}
+            {countries
+              .filter(geo => byAtlasName.has(geo.properties.name))
+              .map((geo, i) => {
+                const d = byAtlasName.get(geo.properties.name)!
+                const v = m.value(d)
+                const point = projection(geoCentroid(geo))
+                if (!point) return null
+                return (
+                  <circle
+                    key={`m-${geo.properties.name}-${i}`}
+                    cx={point[0]}
+                    cy={point[1]}
+                    r={3 + (max > 0 ? Math.sqrt(v / max) * 9 : 0)}
+                    fill={m.dark}
+                    fillOpacity={0.55}
+                    stroke="#fff"
+                    strokeWidth={1}
+                    onMouseMove={onMove(d)}
+                    onMouseLeave={() => setHover(null)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                )
+              })}
+          </svg>
 
           {hover && (
             <div
