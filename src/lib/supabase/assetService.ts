@@ -16,18 +16,13 @@ export async function saveAssetsToDatabase(
       return { success: false, error: 'Database is not configured' }
     }
 
-    // Delete existing assets for this user first
-    const { error: deleteError } = await supabase
-      .from('imported_assets')
-      .delete()
-      .eq('user_id', userId)
-
-    if (deleteError) {
-      console.error('Failed to delete old assets:', deleteError)
-      return { success: false, error: deleteError.message }
+    // Insert first and remove the previous upload only afterwards, so a failed insert never loses data
+    const { data: previous, error: readError } = await supabase.from('imported_assets').select('id').eq('user_id', userId)
+    if (readError) {
+      console.error('Failed to read existing assets:', readError)
+      return { success: false, error: readError.message }
     }
 
-    // Insert new assets
     const { error } = await supabase
       .from('imported_assets')
       .insert(
@@ -40,7 +35,7 @@ export async function saveAssetsToDatabase(
           date_of_manufacture: asset.dateOfManufacture,
           last_date_of_support: asset.lastDateOfSupport,
           health_status: asset.healthStatus,
-          compliance_score: asset.complianceScore,
+          compliance_score: Math.round(asset.complianceScore),
           days_until_end_of_support: asset.daysUntilEndOfSupport,
           country: asset.country,
           region: asset.region,
@@ -68,6 +63,15 @@ export async function saveAssetsToDatabase(
     if (error) {
       console.error('Failed to insert assets to database:', error)
       return { success: false, error: error.message }
+    }
+
+    const oldIds = (previous ?? []).map(r => r.id)
+    for (let i = 0; i < oldIds.length; i += 100) {
+      const { error: deleteError } = await supabase.from('imported_assets').delete().in('id', oldIds.slice(i, i + 100))
+      if (deleteError) {
+        console.error('Failed to remove previous upload:', deleteError)
+        return { success: false, error: `New data saved, but the previous upload could not be removed: ${deleteError.message}` }
+      }
     }
 
     return { success: true }
